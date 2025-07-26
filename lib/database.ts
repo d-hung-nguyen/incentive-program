@@ -639,9 +639,8 @@ export async function getAllUsers() {
 // Get system statistics function
 export async function getSystemStats() {
   const supabase = createClient();
-
+  
   try {
-    // Get counts for each table
     const [
       { count: totalOrganizations },
       { count: totalUsers },
