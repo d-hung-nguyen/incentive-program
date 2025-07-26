@@ -35,6 +35,15 @@ import {
   CreditCard,
 } from 'lucide-react';
 
+interface Hotel {
+  id: string;
+  hotel_name: string;
+  location_city: string;
+  location_country: string;
+  tags?: string[];
+  // ... other hotel properties
+}
+
 export default async function AdminDashboard() {
   const supabase = createClient();
   const { data, error } = await supabase.auth.getUser();
@@ -473,16 +482,11 @@ export default async function AdminDashboard() {
                     {/* Tags */}
                     {hotel.tags && hotel.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1">
-                        {hotel.tags.slice(0, 3).map((tag) => (
+                        {hotel.tags.slice(0, 3).map((tag: string) => (
                           <Badge key={tag} variant="secondary" className="text-xs">
                             {tag}
                           </Badge>
                         ))}
-                        {hotel.tags.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{hotel.tags.length - 3} more
-                          </Badge>
-                        )}
                       </div>
                     )}
 
@@ -535,7 +539,7 @@ export default async function AdminDashboard() {
                           Key Amenities:
                         </p>
                         <div className="flex flex-wrap gap-1">
-                          {hotel.amenities.slice(0, 4).map((amenity) => (
+                          {hotel.amenities.slice(0, 4).map((amenity: string) => (
                             <Badge key={amenity} variant="outline" className="text-xs">
                               {amenity.replace('-', ' ')}
                             </Badge>

@@ -1,12 +1,10 @@
-Users / hungnguyen / CODES / incentive - program - main / app / signup / page.tsx;
-('use client');
+'use client';
 
 import { useFormState } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-// Fix import path
 import { signup, signInWithGoogle, signInWithGithub } from '@/app/auth/actions';
 import Link from 'next/link';
 import Image from 'next/image';
