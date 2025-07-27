@@ -1,78 +1,196 @@
 import { createClient } from '@/utils/supabase/server';
+import type {
+  Agency,
+  Agent,
+  Booking,
+  Hotel,
+  UserProfile,
+  UserPoints,
+  PointTransaction,
+} from '@/app/types/database';
 
+// Update getUserProfile function
 export async function getUserProfile(userId: string) {
   const supabase = createClient();
 
-  const { data, error } = await supabase
-    .from('user_profiles')
-    .select(
+  try {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select(
+        `
+        *,
+        organizations (
+          id,
+          name,
+          type,
+          city,
+          country
+        )
       `
-      *,
-      organizations (
-        name,
-        type
       )
-    `
-    )
-    .eq('id', userId)
-    .single();
+      .eq('id', userId)
+      .single();
 
-  if (error) {
-    console.error('Error fetching user profile:', error);
+    if (error) {
+      console.error('Error fetching user profile:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error in getUserProfile:', error);
     return null;
   }
+}
 
-  return data;
+// Create user profile function
+export async function createUserProfile(
+  userId: string,
+  userType: 'admin' | 'regional' | 'agent' | 'resort',
+  profileData: {
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    organization_id?: string;
+    region?: string;
+  }
+) {
+  const supabase = createClient();
+
+  try {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .insert({
+        id: userId,
+        user_type: userType,
+        ...profileData,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating user profile:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error in createUserProfile:', error);
+    return null;
+  }
+}
+
+// Update user profile function
+export async function updateUserProfile(
+  userId: string,
+  updates: {
+    user_type?: 'admin' | 'regional' | 'agent' | 'resort';
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    organization_id?: string;
+    region?: string;
+    is_active?: boolean;
+  }
+) {
+  const supabase = createClient();
+
+  try {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update(updates)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating user profile:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error in updateUserProfile:', error);
+    return null;
+  }
+}
+
+// Get users by type
+export async function getUsersByType(userType: 'admin' | 'regional' | 'agent' | 'resort') {
+  const supabase = createClient();
+
+  try {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select(
+        `
+        *,
+        organizations (
+          id,
+          name,
+          type
+        )
+      `
+      )
+      .eq('user_type', userType)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching users by type:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getUsersByType:', error);
+    return [];
+  }
 }
 
 export async function getUserPoints(userId: string) {
   const supabase = createClient();
 
-  const { data, error } = await supabase
-    .from('user_points')
-    .select(
-      `
-      *,
-      incentive_programs (
-        name,
-        description,
-        is_active
-      )
-    `
-    )
-    .eq('user_id', userId);
+  try {
+    const { data, error } = await supabase
+      .from('user_points')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching user points:', error);
+    if (error) {
+      console.error('Error fetching user points:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getUserPoints:', error);
     return [];
   }
-
-  return data || [];
 }
 
-export async function getUserTransactions(userId: string, limit = 10) {
+export async function getUserTransactions(userId: string, limit: number = 50) {
   const supabase = createClient();
 
-  const { data, error } = await supabase
-    .from('point_transactions')
-    .select(
-      `
-      *,
-      incentive_programs (
-        name
-      )
-    `
-    )
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(limit);
+  try {
+    const { data, error } = await supabase
+      .from('point_transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
-  if (error) {
-    console.error('Error fetching transactions:', error);
+    if (error) {
+      console.error('Error fetching user transactions:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getUserTransactions:', error);
     return [];
   }
-
-  return data || [];
 }
 
 export async function getAvailableRewards(userId: string) {
@@ -247,23 +365,6 @@ export async function getAllPrograms() {
   }
 }
 
-export async function getAllAgencies() {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from('agencies')
-    .select('*')
-    .eq('is_active', true)
-    .order('company_name', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching all agencies:', error);
-    return [];
-  }
-
-  return data || [];
-}
-
 // Get agencies by country
 export async function getAgenciesByCountry(country: string) {
   const supabase = createClient();
@@ -271,9 +372,9 @@ export async function getAgenciesByCountry(country: string) {
   const { data, error } = await supabase
     .from('agencies')
     .select('*')
-    .eq('company_country', country)
+    .eq('country', country)
     .eq('is_active', true)
-    .order('company_name', { ascending: true });
+    .order('name', { ascending: true });
 
   if (error) {
     console.error('Error fetching agencies by country:', error);
@@ -285,23 +386,20 @@ export async function getAgenciesByCountry(country: string) {
 
 // Search agencies by name or company
 export async function searchAgencies(searchTerm: string) {
-  const supabase = createClient();
+  try {
+    const response = await fetch(`/api/agents/search-agencies?q=${encodeURIComponent(searchTerm)}`);
+    const result = await response.json();
 
-  const { data, error } = await supabase
-    .from('agencies')
-    .select('*')
-    .or(
-      `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%`
-    )
-    .eq('is_active', true)
-    .order('company_name', { ascending: true });
+    if (!response.ok) {
+      console.error('Error searching agencies:', result.error);
+      return [];
+    }
 
-  if (error) {
-    console.error('Error searching agencies:', error);
+    return result.data || [];
+  } catch (error) {
+    console.error('Error in searchAgencies:', error);
     return [];
   }
-
-  return data || [];
 }
 
 // Get agency by ID
@@ -440,7 +538,9 @@ export async function getAllBookings() {
       hotels (
         hotel_name,
         location_city,
-        location_country
+        location_country,
+        contact_email,
+        contact_phone
       ),
       room_types (
         room_type_name,
@@ -449,10 +549,9 @@ export async function getAllBookings() {
       ),
       agencies (
         id,
-        company_name,
-        company_address,
-        company_city,
-        company_country,
+        name,
+        city,
+        country,
         telephone,
         email
       )
@@ -479,7 +578,8 @@ export async function getBookingsByHotel(hotelId: string) {
       *,
       hotels (
         hotel_name,
-        location_city
+        location_city,
+        location_country
       ),
       room_types (
         room_type_name,
@@ -487,11 +587,11 @@ export async function getBookingsByHotel(hotelId: string) {
       ),
       agencies (
         id,
-        company_name,
-        company_address,
-        company_city,
-        telephone,
-        email
+        name,
+        first_name,
+        last_name,
+        email,
+        telephone
       )
     `
     )
@@ -531,10 +631,9 @@ export async function getBookingByConfirmation(confirmationNumber: string) {
       ),
       agencies (
         id,
-        company_name,
-        company_address,
-        company_city,
-        company_country,
+        name,
+        city,
+        country,
         telephone,
         email
       )
@@ -807,4 +906,413 @@ export async function getAgencyPointsHistory(agencyId: string) {
     console.error('Error in getAgencyPointsHistory:', error);
     return [];
   }
+}
+
+// Add these functions to your existing database.ts file
+
+export async function getAgentClients(agentId: string) {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from('agent_clients')
+    .select('*')
+    .eq('agent_id', agentId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching agent clients:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function getBookingsByAgent(agentId: string) {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from('bookings')
+    .select(
+      `
+      *,
+      hotels (hotel_name, location_city, location_country),
+      room_types (room_type_name, max_occupancy)
+    `
+    )
+    .eq('agent_id', agentId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching agent bookings:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function getRoomTypesByHotel(hotelId: string) {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from('room_types')
+    .select('*')
+    .eq('hotel_id', hotelId)
+    .eq('is_active', true)
+    .order('room_type_name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching room types:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function getAgentWithAgency(agentId: string) {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from('agents')
+    .select(
+      `
+      *,
+      agencies!agencies_agent_id_fkey (
+        id,
+        name,
+        city,
+        country,
+        email,
+        telephone,
+        zip_code,
+        is_active
+      )
+    `
+    )
+    .eq('id', agentId)
+    .single();
+
+  if (error) {
+    console.error('Error fetching agent with agency:', error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function getAgentBookings(agentId: string): Promise<Booking[]> {
+  const supabase = createClient();
+
+  // First get the agent's agency
+  const agent = await getAgentWithAgency(agentId);
+
+  if (!agent?.agencies?.id) {
+    console.error('Agent has no associated agency');
+    return [];
+  }
+
+  // Then get bookings for that agency
+  const { data, error } = await supabase
+    .from('bookings')
+    .select(
+      `
+      *,
+      hotels (
+        hotel_name,
+        location_city,
+        location_country,
+        star_rating
+      ),
+      room_types (
+        room_type_name,
+        max_occupancy
+      ),
+      agencies (
+        name,
+        city,
+        country
+      )
+    `
+    )
+    .eq('agency_id', agent.agencies.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching agent bookings:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function getAgentVoucherRedemptions(agentId: string) {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from('voucher_redemptions')
+    .select('*')
+    .eq('agent_id', agentId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching voucher redemptions:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function createAgentWithAgency(agentData: {
+  first_name: string;
+  last_name: string;
+  email: string;
+  telephone: string;
+  agency_name: string;
+  agency_city: string;
+  agency_country: string;
+  agency_zip_code: string;
+  agency_email: string;
+  agency_telephone: string;
+  agency_address?: string;
+}) {
+  try {
+    const response = await fetch('/api/agents/create-with-agency', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(agentData),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return { success: false, error: result.error || 'Failed to create agent' };
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error in createAgentWithAgency:', error);
+    return { success: false, error: 'Network error occurred' };
+  }
+}
+
+export async function updateAgentAgency(
+  agentId: string,
+  agencyData: {
+    agency_name: string;
+    agency_city: string;
+    agency_country: string;
+    agency_zip_code: string;
+    agency_email: string;
+    agency_telephone: string;
+    agency_address?: string;
+  }
+) {
+  const supabase = createClient();
+
+  try {
+    const { data, error } = await supabase.rpc('update_agent_agency', {
+      p_agent_id: agentId,
+      p_agency_name: agencyData.agency_name,
+      p_agency_city: agencyData.agency_city,
+      p_agency_country: agencyData.agency_country,
+      p_agency_zip_code: agencyData.agency_zip_code,
+      p_agency_email: agencyData.agency_email,
+      p_agency_telephone: agencyData.agency_telephone,
+      p_agency_address: agencyData.agency_address || '',
+    });
+
+    if (error) {
+      console.error('Error calling update_agent_agency RPC:', error);
+      return { success: false, error: error.message };
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error in updateAgentAgency:', error);
+    return { success: false, error: 'Unexpected error occurred' };
+  }
+}
+
+export async function assignAgentToExistingAgency(agentId: string, agencyId: string) {
+  try {
+    const response = await fetch('/api/agents/assign-to-agency', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ agent_id: agentId, agency_id: agencyId }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return { success: false, error: result.error || 'Failed to assign agent' };
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error in assignAgentToExistingAgency:', error);
+    return { success: false, error: 'Network error occurred' };
+  }
+}
+
+// Update the existing getAllAgentsWithAgencies function to use RPC
+export async function getAllAgentsWithAgencies() {
+  const supabase = createClient();
+
+  try {
+    const { data, error } = await supabase.rpc('get_agents_with_agencies');
+
+    if (error) {
+      console.error('Error calling get_agents_with_agencies RPC:', error);
+
+      // Fallback to the existing method
+      return await getAllAgentsWithAgenciesFallback();
+    }
+
+    // Transform RPC result to expected format
+    return (data || []).map((agent: any) => ({
+      ...agent,
+      agencies: agent.agency_name
+        ? {
+            id: agent.agency_id,
+            name: agent.agency_name,
+            city: agent.agency_city,
+            country: agent.agency_country,
+            email: agent.agency_email,
+            telephone: agent.agency_telephone,
+            zip_code: agent.agency_zip_code,
+            is_active: agent.agency_is_active || true,
+            address: agent.agency_address || '',
+          }
+        : null,
+    }));
+  } catch (error) {
+    console.error('Error in getAllAgentsWithAgencies:', error);
+    return await getAllAgentsWithAgenciesFallback();
+  }
+}
+
+// Keep the existing function as fallback
+async function getAllAgentsWithAgenciesFallback() {
+  const supabase = createClient();
+
+  // First try the relationship query using the new agency_id foreign key
+  let { data, error } = await supabase
+    .from('agents')
+    .select(
+      `
+      *,
+      agencies!agency_id (
+        id,
+        name,
+        city,
+        country,
+        email,
+        telephone,
+        zip_code,
+        is_active
+      )
+    `
+    )
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Relationship query failed:', error);
+
+    // Fallback: Use denormalized data
+    const { data: agentsData, error: fallbackError } = await supabase
+      .from('agents')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (fallbackError) {
+      console.error('Error fetching agents (fallback):', fallbackError);
+      return [];
+    }
+
+    // Map denormalized data to expected structure
+    return (agentsData || []).map((agent) => ({
+      ...agent,
+      agencies: agent.agency_name
+        ? {
+            id: agent.agency_id || '',
+            name: agent.agency_name,
+            city: agent.agency_city,
+            country: agent.agency_country,
+            email: agent.agency_email,
+            telephone: agent.agency_telephone,
+            zip_code: agent.agency_zip_code,
+            is_active: true, // Default since we don't store this denormalized
+            address: agent.agency_address || '',
+          }
+        : null,
+    }));
+  }
+
+  return data || [];
+}
+
+// Update getAllAgencies function to show the new agencies
+export async function getAllAgencies() {
+  const supabase = createClient();
+
+  try {
+    const { data, error } = await supabase
+      .from('agencies')
+      .select(
+        `
+        *,
+        agents!agencies_agent_id_fkey (
+          id,
+          first_name,
+          last_name,
+          email,
+          telephone,
+          is_active
+        )
+      `
+      )
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching agencies:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getAllAgencies:', error);
+    return [];
+  }
+}
+// Add this function to your existing database.ts file
+export async function getAllAgents() {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from('agents')
+    .select(
+      `
+      *,
+      agencies!agents_agency_id_fkey (
+        id,
+        name,
+        city,
+        country,
+        zip_code,
+        address,
+        is_active
+      )
+    `
+    )
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching agents:', error);
+    return [];
+  }
+
+  return data || [];
 }

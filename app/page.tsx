@@ -13,6 +13,7 @@ import {
   CheckCircle,
   Plane,
   MapPin,
+  Plus,
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -90,10 +91,11 @@ export default function HomePage() {
               About
             </Link>
             <Link
-              href="#contact"
+              href="/agent/application"
               className="nav-link text-sm font-medium text-gray-600 hover:text-gray-900"
             >
-              Contact
+              Application
+
             </Link>
           </nav>
 
@@ -103,7 +105,7 @@ export default function HomePage() {
                 Sign In
               </Button>
             </Link>
-            <Link href="/signup">
+            <Link href="/agent/application">
               <Button size="sm" className="cta-button">
                 Get Started
               </Button>

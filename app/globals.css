@@ -5,57 +5,57 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --foreground: 222 47% 11%; /* deep navy for text */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 20 91% 48%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 221 83% 34%; /* navy blue primary */
     --primary-foreground: 0 0% 98%;
-    --secondary: 39 100% 97%;
-    --secondary-foreground: 20 95% 25%;
-    --muted: 39 100% 97%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 39 88% 92%;
-    --accent-foreground: 20 95% 25%;
+    --secondary: 213 100% 97%; /* very light blue background */
+    --secondary-foreground: 221 83% 34%;
+    --muted: 213 100% 97%;
+    --muted-foreground: 222 20% 40%;
+    --accent: 213 88% 92%;
+    --accent-foreground: 221 83% 34%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 39 62% 91%;
-    --input: 39 62% 91%;
-    --ring: 20 91% 48%;
+    --border: 213 62% 91%;
+    --input: 213 62% 91%;
+    --ring: 221 83% 34%;
     --radius: 0.5rem;
-    --chart-1: 20 91% 48%;
-    --chart-2: 173 58% 39%;
+    --chart-1: 221 83% 34%;
+    --chart-2: 213 58% 39%;
     --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 16 85% 55%;
+    --chart-4: 213 74% 66%;
+    --chart-5: 213 85% 55%;
   }
 
   .dark {
-    --background: 20 14% 4.1%;
-    --foreground: 39 100% 97%;
-    --card: 20 14% 4.1%;
-    --card-foreground: 39 100% 97%;
-    --popover: 20 14% 4.1%;
-    --popover-foreground: 39 100% 97%;
-    --primary: 39 100% 97%;
-    --primary-foreground: 20 95% 25%;
-    --secondary: 20 20% 12%;
-    --secondary-foreground: 39 100% 97%;
-    --muted: 20 20% 12%;
+    --background: 221 39% 8%;
+    --foreground: 213 100% 97%;
+    --card: 221 39% 8%;
+    --card-foreground: 213 100% 97%;
+    --popover: 221 39% 8%;
+    --popover-foreground: 213 100% 97%;
+    --primary: 213 100% 97%;
+    --primary-foreground: 221 83% 34%;
+    --secondary: 221 20% 12%;
+    --secondary-foreground: 213 100% 97%;
+    --muted: 221 20% 12%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 20 25% 15%;
-    --accent-foreground: 39 100% 97%;
+    --accent: 221 25% 15%;
+    --accent-foreground: 213 100% 97%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 20 20% 12%;
-    --input: 20 20% 12%;
-    --ring: 39 100% 97%;
-    --chart-1: 20 91% 48%;
-    --chart-2: 173 58% 55%;
+    --border: 221 20% 12%;
+    --input: 221 20% 12%;
+    --ring: 213 100% 97%;
+    --chart-1: 221 83% 34%;
+    --chart-2: 213 58% 55%;
     --chart-3: 197 50% 60%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 16 85% 60%;
+    --chart-4: 213 74% 66%;
+    --chart-5: 213 85% 60%;
   }
 }
 
@@ -79,11 +79,11 @@
 /* Orange Theme Components */
 @layer components {
   .hero-gradient {
-    background: linear-gradient(135deg, #fed7aa 0%, #ffffff 50%, #ffedd5 100%);
+    background: linear-gradient(135deg, #dbeafe 0%, #ffffff 50%, #93c5fd 100%);
   }
 
   .hero-title {
-    background: linear-gradient(135deg, #1f2937 0%, #ea580c 50%, #c2410c 100%);
+    background: linear-gradient(135deg, #1f2937 0%, #1e3a8a 50%, #1e40af 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -91,74 +91,74 @@
 
   .feature-card {
     @apply transition-all duration-300 ease-in-out;
-    background: linear-gradient(145deg, #ffffff 0%, #fffbeb 100%);
-    border: 1px solid rgba(251, 191, 36, 0.2);
+    background: linear-gradient(145deg, #ffffff 0%, #dbeafe 100%);
+    border: 1px solid rgba(30, 58, 138, 0.2);
   }
 
   .feature-card:hover {
     @apply -translate-y-2;
-    box-shadow: 0 25px 50px -12px rgba(251, 146, 60, 0.25);
-    border-color: #ea580c;
+    box-shadow: 0 25px 50px -12px rgba(30, 58, 138, 0.25);
+    border-color: #1e3a8a;
   }
 
   .cta-button {
-    background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
     @apply transition-all duration-300 ease-in-out;
-    box-shadow: 0 10px 25px -5px rgba(234, 88, 12, 0.4);
+    box-shadow: 0 10px 25px -5px rgba(30, 58, 138, 0.4);
   }
 
   .cta-button:hover {
     @apply -translate-y-1;
-    box-shadow: 0 20px 40px -5px rgba(234, 88, 12, 0.5);
+    box-shadow: 0 20px 40px -5px rgba(30, 58, 138, 0.5);
   }
 
   /* Dashboard Cards */
   .dashboard-card {
-    background: linear-gradient(145deg, #ffffff 0%, #fffbeb 100%);
-    border: 1px solid rgba(251, 191, 36, 0.2);
+    background: linear-gradient(145deg, #ffffff 0%, #dbeafe 100%);
+    border: 1px solid rgba(30, 58, 138, 0.2);
     @apply transition-all duration-300 ease-in-out;
   }
 
   .dashboard-card:hover {
-    box-shadow: 0 10px 25px -5px rgba(234, 88, 12, 0.15);
-    border-color: #ea580c;
+    box-shadow: 0 10px 25px -5px rgba(30, 58, 138, 0.15);
+    border-color: #1e3a8a;
   }
 
-  .stats-card-orange {
-    background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+  .stats-card-navy {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
     @apply text-white;
   }
 
-  .stats-card-orange-light {
-    background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
-    color: #c2410c;
+  .stats-card-navy-light {
+    background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%);
+    color: #1e3a8a;
   }
 
   /* Form Styles */
   .form-card {
-    background: linear-gradient(145deg, #ffffff 0%, #fffbeb 100%);
-    border: 1px solid rgba(251, 191, 36, 0.2);
+    background: linear-gradient(145deg, #ffffff 0%, #dbeafe 100%);
+    border: 1px solid rgba(30, 58, 138, 0.2);
   }
 
   .input-orange:focus {
-    border-color: #ea580c;
-    ring-color: #ea580c;
+    border-color: #1e3a8a;
+    ring-color: #1e3a8a;
     ring-opacity: 0.2;
   }
 
   /* Table Styles */
   .table-header-orange {
-    background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
-    color: #9a3412;
+    background: linear-gradient(135deg, #e0f2fe 0%, #bfdbfe 100%);
+    color: #1e3a8a;
   }
 
   .table-row-hover:hover {
-    background: rgba(234, 88, 12, 0.05);
+    background: rgba(30, 58, 138, 0.05);
   }
 
   /* Navigation */
   .nav-active-orange {
-    @apply bg-orange-600 text-white;
+    @apply bg-blue-800 text-white;
   }
 
   .nav-inactive-orange {
@@ -166,8 +166,8 @@
   }
 
   .nav-inactive-orange:hover {
-    @apply text-orange-600;
-    background: rgba(234, 88, 12, 0.05);
+    @apply text-blue-800;
+    background: rgba(30, 58, 138, 0.05);
   }
 
   /* Animations */
@@ -186,14 +186,14 @@
 
 @layer utilities {
   .text-gradient {
-    background: linear-gradient(135deg, #1f2937 0%, #ea580c 50%, #c2410c 100%);
+    background: linear-gradient(135deg, #1f2937 0%, #1e3a8a 50%, #1e40af 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .shadow-glow {
-    box-shadow: 0 0 40px rgba(234, 88, 12, 0.15);
+    box-shadow: 0 0 40px rgba(30, 58, 138, 0.15);
   }
 }
 
@@ -241,16 +241,16 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #ea580c, #c2410c);
+  background: linear-gradient(135deg, #1e3a8a, #1e40af);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #c2410c, #9a3412);
+  background: linear-gradient(135deg, #1e40af, #1e3a8a);
 }
 
 /* Text Selection */
 ::selection {
-  background: rgba(234, 88, 12, 0.2);
+  background: rgba(30, 58, 138, 0.2);
   color: #1f2937;
 }

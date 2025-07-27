@@ -157,6 +157,8 @@ point_redemptions (
 
 ## API Endpoints
 
+npm
+
 ### Booking API Endpoints
 
 - `GET /api/bookings` - List all bookings
