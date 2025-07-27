@@ -8,17 +8,29 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { loginUser, signInWithGoogle, signInWithGithub } from '@/app/auth/actions';
 import Link from 'next/link';
+import { Building2 } from 'lucide-react';
 
 export default function LoginPage() {
   const [state, formAction] = useFormState(loginUser, { message: '' });
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Sign In</CardTitle>
-          <CardDescription>Enter your credentials to access your account</CardDescription>
+    <div className="min-h-screen flex items-center justify-center hero-gradient">
+      <Card className="w-full max-w-md feature-card">
+        <CardHeader className="space-y-1">
+          <div className="flex justify-center py-4">
+            <Link href="/">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-600">
+                <Building2 className="h-8 w-8 text-white" />
+              </div>
+            </Link>
+          </div>
+
+          <CardTitle className="text-2xl font-bold text-center">Sign In</CardTitle>
+          <CardDescription className="text-center">
+            Welcome back to TravelIncentive
+          </CardDescription>
         </CardHeader>
+        
         <CardContent className="space-y-4">
           <form action={formAction} className="space-y-4">
             <div className="space-y-2">
@@ -36,7 +48,7 @@ export default function LoginPage() {
               />
             </div>
             {state.message && <div className="text-sm text-red-600">{state.message}</div>}
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full cta-button">
               Sign In
             </Button>
           </form>
@@ -70,7 +82,7 @@ export default function LoginPage() {
             </Link>
           </p>
           <div className="text-center text-sm">
-            <Link href="/forgot-password" className="text-primary hover:underline">
+            <Link href="/forgot-password" className="text-orange-600 hover:text-orange-700 hover:underline">
               Forgot your password?
             </Link>
           </div>

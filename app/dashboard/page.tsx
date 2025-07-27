@@ -1,39 +1,56 @@
-import { createClient } from '@/utils/supabase/server';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import {
-  getAllOrganizations,
-  getSystemStats,
-  getAllUsers,
-  getAllPrograms,
-  getAllAgencies,
-  getAllHotels,
-  getAllBookings, // Add this import
-} from '@/lib/database';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   Building2,
   Users,
-  Trophy,
-  Activity,
-  Crown,
-  Shield,
-  UserCheck,
+  Hotel,
+  TrendingUp,
   Calendar,
+  CheckCircle,
+  Clock,
+  XCircle,
+  Euro,
+  Plus,
+  Eye,
+  Edit,
+  Plane,
+  MapPin,
+  Award,
+  Globe,
+  Shield,
+  CalendarDays,
+  Activity,
+  Trophy,
+  UserCheck,
+  User,
   Mail,
   Phone,
-  MapPin,
-  User,
-  Plane,
-  Hotel,
   Star,
-  Globe,
-  Wifi,
-  CalendarDays, // Add this for bookings
-  Clock,
-  CreditCard,
 } from 'lucide-react';
+
+import { createClient } from '@/utils/supabase/server';
+
+// Your existing imports for database functions
+import {
+  getSystemStats,
+  getAllHotels,
+  getAllAgencies,
+  getAllBookings,
+  getAllOrganizations,
+  getAllUsers,
+} from '@/lib/database';
+import { RoomPointCalculator } from '@/components/RoomPointCalculator';
 
 interface Hotel {
   id: string;
@@ -51,23 +68,18 @@ export default async function AdminDashboard() {
   const user = data?.user;
 
   // Fetch admin data - include bookings
-  const [
-    allOrganizations,
-    systemStats,
-    allUsers,
-    allPrograms,
-    allAgencies,
-    allHotels,
-    allBookings,
-  ] = await Promise.all([
-    getAllOrganizations(),
-    getSystemStats(),
-    getAllUsers(),
-    getAllPrograms(),
-    getAllAgencies(),
-    getAllHotels(),
-    getAllBookings(), // Add this
-  ]);
+  const [allOrganizations, systemStats, allUsers, allAgencies, allHotels, allBookings] =
+    await Promise.all([
+      getAllOrganizations(),
+      getSystemStats(),
+      getAllUsers(),
+      getAllAgencies(),
+      getAllHotels(),
+      getAllBookings(),
+    ]);
+
+  // Mock data for programs - remove this if you have real data
+  const allPrograms = [];
 
   return (
     <main className="flex-1">
@@ -187,10 +199,10 @@ export default async function AdminDashboard() {
           <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="organizations">Organizations</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="programs">Programs</TabsTrigger>
             <TabsTrigger value="agencies">Agencies</TabsTrigger>
             <TabsTrigger value="hotels">Hotels</TabsTrigger>
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
+            <TabsTrigger value="points">Points</TabsTrigger> {/* Add this */}
             <TabsTrigger value="system">System</TabsTrigger>
           </TabsList>
 
@@ -312,122 +324,243 @@ export default async function AdminDashboard() {
             </div>
           </TabsContent>
 
-          {/* Programs Tab */}
-          <TabsContent value="programs" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">All Programs</h2>
-              <Badge variant="outline">{allPrograms.length} Total</Badge>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              {allPrograms.map((program) => (
-                <Card key={program.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <CardTitle className="text-lg">{program.name}</CardTitle>
-                      <Badge variant={program.is_active ? 'default' : 'secondary'}>
-                        {program.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {program.description && (
-                      <p className="text-sm text-muted-foreground">{program.description}</p>
-                    )}
-                    {program.organizations && (
-                      <div className="flex items-center gap-2 rounded-md bg-muted p-2">
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{program.organizations.name}</span>
-                        <Badge variant="outline" className="text-xs">
-                          {program.organizations.type}
-                        </Badge>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-              {allPrograms.length === 0 && (
-                <Card className="col-span-full">
-                  <CardContent className="py-8 text-center">
-                    <Trophy className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                    <p className="text-muted-foreground">No programs found</p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </TabsContent>
-
           {/* Agencies Tab */}
           <TabsContent value="agencies" className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Travel Agencies</h2>
-              <Badge variant="outline">{allAgencies.length} Total</Badge>
+              <h2 className="text-2xl font-bold tracking-tight">Agencies Management</h2>
+              <Button className="cta-button">
+                <Plus className="mr-2 h-4 w-4" />
+                New Agency
+              </Button>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {allAgencies.map((agency) => (
-                <Card key={agency.id} className="transition-shadow hover:shadow-md">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                          <User className="h-5 w-5" />
-                          {agency.first_name} {agency.last_name}
-                        </CardTitle>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          {agency.company_name}
-                        </p>
-                      </div>
-                      <Badge
-                        variant={agency.is_active ? 'default' : 'secondary'}
-                        className="text-xs"
-                      >
-                        {agency.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
+            <Card className="dashboard-card">
+              <CardHeader className="table-header-orange">
+                <CardTitle>Travel Agencies Directory</CardTitle>
+                <CardDescription>
+                  Manage and track all travel agency partners in your network
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-orange-200">
+                        <TableHead className="w-[100px]">Agency ID</TableHead>
+                        <TableHead>Contact Person</TableHead>
+                        <TableHead>Company</TableHead>
+                        <TableHead>Location</TableHead>
+                        <TableHead>Contact Info</TableHead>
+                        <TableHead>IATA Code</TableHead>
+                        <TableHead>Specialization</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Joined Date</TableHead>
+                        <TableHead className="w-[80px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {allAgencies.map((agency) => (
+                        <TableRow key={agency.id} className="table-row-hover border-orange-100">
+                          <TableCell className="font-medium">
+                            #{agency.id.toString().padStart(4, '0')}
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">
+                                {agency.first_name} {agency.last_name}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {agency.position || 'Agent'}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{agency.company_name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {agency.company_type || 'Travel Agency'}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">
+                                {agency.company_city}, {agency.company_country}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {agency.company_zip_code}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="flex items-center space-x-1">
+                                <Mail className="h-3 w-3 text-orange-600" />
+                                <a
+                                  href={`mailto:${agency.email}`}
+                                  className="max-w-[150px] truncate text-sm text-blue-600 hover:underline"
+                                >
+                                  {agency.email}
+                                </a>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <Phone className="h-3 w-3 text-orange-600" />
+                                <a
+                                  href={`tel:${agency.telephone}`}
+                                  className="text-sm text-blue-600 hover:underline"
+                                >
+                                  {agency.telephone}
+                                </a>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {agency.iata_code ? (
+                              <Badge variant="outline" className="font-mono">
+                                {agency.iata_code}
+                              </Badge>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">N/A</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {agency.specializations && agency.specializations.length > 0 ? (
+                                agency.specializations.slice(0, 2).map((spec: string) => (
+                                  <Badge key={spec} variant="secondary" className="text-xs">
+                                    {spec}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <Badge variant="outline" className="text-xs">
+                                  General
+                                </Badge>
+                              )}
+                              {agency.specializations && agency.specializations.length > 2 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{agency.specializations.length - 2}
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={agency.is_active ? 'default' : 'secondary'}
+                              className={
+                                agency.is_active
+                                  ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                  : 'bg-gray-100 text-gray-800'
+                              }
+                            >
+                              {agency.is_active ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(agency.created_at).toLocaleDateString('en-GB', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex space-x-1">
+                              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {allAgencies.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Plane className="mb-4 h-12 w-12 text-muted-foreground" />
+                    <h3 className="mb-2 text-lg font-medium">No agencies found</h3>
+                    <p className="max-w-sm text-center text-muted-foreground">
+                      Travel agencies will appear here once they register with your platform.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Agency Statistics Cards */}
+            <div className="grid gap-4 md:grid-cols-4">
+              <Card className="dashboard-card">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <div className="rounded-lg bg-green-100 p-2">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
                     </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-start gap-2">
-                      <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                      <div className="text-sm">
-                        <p>{agency.company_address}</p>
-                        <p>
-                          {agency.company_zip_code} {agency.company_city}
-                        </p>
-                        <p className="font-medium">{agency.company_country}</p>
-                      </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Active Agencies</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {allAgencies.filter((a) => a.is_active).length}
+                      </p>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        <a
-                          href={`mailto:${agency.email}`}
-                          className="truncate text-sm text-blue-600 hover:underline"
-                        >
-                          {agency.email}
-                        </a>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <a
-                          href={`tel:${agency.telephone}`}
-                          className="text-sm text-blue-600 hover:underline"
-                        >
-                          {agency.telephone}
-                        </a>
-                      </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="dashboard-card">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <div className="rounded-lg bg-orange-100 p-2">
+                      <Globe className="h-4 w-4 text-orange-600" />
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-              {allAgencies.length === 0 && (
-                <Card className="col-span-full">
-                  <CardContent className="py-8 text-center">
-                    <Plane className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                    <p className="text-muted-foreground">No agencies found</p>
-                  </CardContent>
-                </Card>
-              )}
+                    <div>
+                      <p className="text-sm text-muted-foreground">Countries</p>
+                      <p className="text-2xl font-bold text-orange-600">
+                        {new Set(allAgencies.map((a) => a.company_country)).size}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="dashboard-card">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <div className="rounded-lg bg-blue-100 p-2">
+                      <Award className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">IATA Certified</p>
+                      <p className="text-2xl font-bold text-blue-600">
+                        {allAgencies.filter((a) => a.iata_code).length}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="dashboard-card">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <div className="rounded-lg bg-purple-100 p-2">
+                      <TrendingUp className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">This Month</p>
+                      <p className="text-2xl font-bold text-purple-600">
+                        {
+                          allAgencies.filter(
+                            (a) =>
+                              new Date(a.created_at).getMonth() === new Date().getMonth() &&
+                              new Date(a.created_at).getFullYear() === new Date().getFullYear()
+                          ).length
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 
@@ -582,225 +715,233 @@ export default async function AdminDashboard() {
           {/* NEW BOOKINGS TAB */}
           <TabsContent value="bookings" className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Hotel Bookings</h2>
-              <Badge variant="outline">{allBookings.length} Total</Badge>
+              <h2 className="text-2xl font-bold tracking-tight">Bookings Management</h2>
+              <Button className="cta-button">
+                <Plus className="mr-2 h-4 w-4" />
+                New Booking
+              </Button>
             </div>
 
-            <div className="grid gap-4">
-              {allBookings.map((booking) => (
-                <Card key={booking.id} className="transition-shadow hover:shadow-md">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                          <User className="h-5 w-5" />
-                          {booking.guest_name}
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          Confirmation:{' '}
-                          <span className="font-mono font-medium">
-                            {booking.confirmation_number}
-                          </span>
-                        </p>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <Badge
-                          variant={
-                            booking.booking_status === 'confirmed'
-                              ? 'default'
-                              : booking.booking_status === 'completed'
-                                ? 'secondary'
-                                : booking.booking_status === 'cancelled'
-                                  ? 'destructive'
-                                  : 'outline'
-                          }
-                          className="text-xs"
-                        >
-                          {booking.booking_status.charAt(0).toUpperCase() +
-                            booking.booking_status.slice(1)}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {booking.number_of_nights}{' '}
-                          {booking.number_of_nights === 1 ? 'Night' : 'Nights'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Hotel and Room Information */}
-                    <div className="rounded-lg bg-muted p-3">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h4 className="flex items-center gap-2 font-semibold">
-                            <Hotel className="h-4 w-4" />
-                            {booking.hotels?.hotel_name}
-                          </h4>
-                          <p className="text-sm text-muted-foreground">
-                            {booking.hotels?.location_city}, {booking.hotels?.location_country}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium">
-                            {booking.room_types?.room_type_name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Max {booking.room_types?.max_occupancy} guests
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* NEW: Agency Information */}
-                    {booking.agencies && (
-                      <div className="rounded-lg bg-blue-50 p-3">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h4 className="flex items-center gap-2 font-semibold text-blue-800">
-                              <Plane className="h-4 w-4" />
-                              {booking.agencies.company_name}
-                            </h4>
-                            <p className="text-sm text-blue-700">
-                              {booking.agencies.company_address}
-                            </p>
-                            <p className="text-sm text-blue-700">
-                              {booking.agencies.company_city}, {booking.agencies.company_country}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            {booking.agencies.telephone && (
-                              <a
-                                href={`tel:${booking.agencies.telephone}`}
-                                className="block text-sm text-blue-600 hover:underline"
-                              >
-                                {booking.agencies.telephone}
-                              </a>
-                            )}
-                            {booking.agencies.email && (
-                              <a
-                                href={`mailto:${booking.agencies.email}`}
-                                className="block text-xs text-blue-600 hover:underline"
-                              >
-                                {booking.agencies.email}
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Dates and Duration */}
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">Arrival</span>
-                        </div>
-                        <p className="text-sm font-semibold">
-                          {new Date(booking.arrival_date).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">Departure</span>
-                        </div>
-                        <p className="text-sm font-semibold">
-                          {new Date(booking.departure_date).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">Duration</span>
-                        </div>
-                        <p className="text-sm font-semibold">
-                          {booking.number_of_nights}{' '}
-                          {booking.number_of_nights === 1 ? 'Night' : 'Nights'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Contact Information */}
-                    {(booking.guest_email || booking.guest_phone) && (
-                      <div className="space-y-2">
-                        {booking.guest_email && (
-                          <div className="flex items-center gap-2">
-                            <Mail className="h-4 w-4 text-muted-foreground" />
-                            <a
-                              href={`mailto:${booking.guest_email}`}
-                              className="text-sm text-blue-600 hover:underline"
+            <Card className="dashboard-card">
+              <CardHeader className="table-header-orange">
+                <CardTitle>Recent Bookings</CardTitle>
+                <CardDescription>
+                  Manage and track all hotel bookings from your agency partners
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-orange-200">
+                        <TableHead className="w-[100px]">Booking ID</TableHead>
+                        <TableHead>Guest Name</TableHead>
+                        <TableHead>Hotel</TableHead>
+                        <TableHead>Agency</TableHead>
+                        <TableHead>Check-in</TableHead>
+                        <TableHead>Check-out</TableHead>
+                        <TableHead>Room Type</TableHead>
+                        <TableHead>Guests</TableHead>
+                        <TableHead className="text-right">Total Amount</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="w-[80px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {allBookings.map((booking) => (
+                        <TableRow key={booking.id} className="table-row-hover border-orange-100">
+                          <TableCell className="font-medium">
+                            #{booking.id.toString().padStart(6, '0')}
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{booking.guest_name}</p>
+                              <p className="text-sm text-muted-foreground">{booking.guest_email}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{booking.hotels?.hotel_name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {booking.hotels?.location_city}, {booking.hotels?.location_country}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{booking.agencies?.company_name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {booking.agencies?.company_city}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(booking.arrival_date).toLocaleDateString('en-GB', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(booking.departure_date).toLocaleDateString('en-GB', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{booking.room_types?.room_type_name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Max {booking.room_types?.max_occupancy} guests
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-1">
+                              <Users className="h-4 w-4 text-orange-600" />
+                              <span>{booking.number_of_guests}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            €
+                            {booking.total_amount?.toLocaleString('de-DE', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                booking.booking_status === 'confirmed'
+                                  ? 'default'
+                                  : booking.booking_status === 'pending'
+                                    ? 'secondary'
+                                    : booking.booking_status === 'cancelled'
+                                      ? 'destructive'
+                                      : 'outline'
+                              }
+                              className={
+                                booking.booking_status === 'confirmed'
+                                  ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                  : booking.booking_status === 'pending'
+                                    ? 'bg-orange-100 text-orange-800 hover:bg-orange-200'
+                                    : ''
+                              }
                             >
-                              {booking.guest_email}
-                            </a>
-                          </div>
-                        )}
-                        {booking.guest_phone && (
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-muted-foreground" />
-                            <a
-                              href={`tel:${booking.guest_phone}`}
-                              className="text-sm text-blue-600 hover:underline"
-                            >
-                              {booking.guest_phone}
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                              {booking.booking_status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex space-x-1">
+                              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
 
-                    {/* Total Amount */}
-                    {booking.total_amount && (
-                      <div className="flex items-center justify-between rounded-lg bg-green-50 p-3">
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="h-4 w-4 text-green-600" />
-                          <span className="font-medium">Total Amount</span>
-                        </div>
-                        <span className="font-bold text-green-600">
-                          ${booking.total_amount.toFixed(2)}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Special Requests */}
-                    {booking.special_requests && (
-                      <div className="rounded-lg bg-blue-50 p-3">
-                        <p className="mb-1 text-sm font-medium text-blue-800">Special Requests:</p>
-                        <p className="text-sm text-blue-700">{booking.special_requests}</p>
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex gap-2 pt-2">
-                      <Button size="sm" className="flex-1">
-                        View Details
-                      </Button>
-                      <Button size="sm" variant="outline" className="flex-1">
-                        Contact Guest
-                      </Button>
-                      {booking.agencies && (
-                        <Button size="sm" variant="outline">
-                          Contact Agency
-                        </Button>
-                      )}
-                      <Button size="sm" variant="outline">
-                        Edit
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              {allBookings.length === 0 && (
-                <Card>
-                  <CardContent className="py-8 text-center">
-                    <CalendarDays className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                    <h3 className="text-lg font-semibold">No bookings found</h3>
-                    <p className="text-muted-foreground">
-                      Hotel bookings will appear here once created
+                {allBookings.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Calendar className="mb-4 h-12 w-12 text-muted-foreground" />
+                    <h3 className="mb-2 text-lg font-medium">No bookings found</h3>
+                    <p className="max-w-sm text-center text-muted-foreground">
+                      When agencies make hotel bookings, they will appear here for you to manage.
                     </p>
-                  </CardContent>
-                </Card>
-              )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Booking Statistics Cards */}
+            <div className="grid gap-4 md:grid-cols-4">
+              <Card className="dashboard-card">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <div className="rounded-lg bg-green-100 p-2">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Confirmed</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {allBookings.filter((b) => b.booking_status === 'confirmed').length}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="dashboard-card">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <div className="rounded-lg bg-orange-100 p-2">
+                      <Clock className="h-4 w-4 text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Pending</p>
+                      <p className="text-2xl font-bold text-orange-600">
+                        {allBookings.filter((b) => b.booking_status === 'pending').length}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="dashboard-card">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <div className="rounded-lg bg-red-100 p-2">
+                      <XCircle className="h-4 w-4 text-red-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Cancelled</p>
+                      <p className="text-2xl font-bold text-red-600">
+                        {allBookings.filter((b) => b.booking_status === 'cancelled').length}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="dashboard-card">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <div className="rounded-lg bg-blue-100 p-2">
+                      <Euro className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Revenue</p>
+                      <p className="text-2xl font-bold text-blue-600">
+                        €
+                        {allBookings
+                          .filter((b) => b.booking_status === 'confirmed')
+                          .reduce((sum, b) => sum + (b.total_amount || 0), 0)
+                          .toLocaleString('de-DE')}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
+          </TabsContent>
+
+          {/* NEW POINTS TAB */}
+          <TabsContent value="points" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold tracking-tight">Points & Rewards System</h2>
+              <Badge variant="secondary" className="text-orange-600">
+                Room-based Points
+              </Badge>
+            </div>
+
+            <RoomPointCalculator />
           </TabsContent>
 
           {/* Update System Tab to include bookings */}

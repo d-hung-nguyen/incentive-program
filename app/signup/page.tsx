@@ -8,23 +8,29 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { signup, signInWithGoogle, signInWithGithub } from '@/app/auth/actions';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Building2 } from 'lucide-react';
 
 export default function Signup() {
   const [state, formAction] = useFormState(signup, { message: '' });
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center hero-gradient">
+      <Card className="w-full max-w-md feature-card">
         <CardHeader className="space-y-1">
           <div className="flex justify-center py-4">
             <Link href="/">
-              <Image src="/logo.png" alt="logo" width={50} height={50} />
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-600">
+                <Building2 className="h-8 w-8 text-white" />
+              </div>
             </Link>
           </div>
 
-          <CardTitle className="text-2xl font-bold">Signup</CardTitle>
-          <CardDescription>Create your account now!</CardDescription>
+          <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
+          <CardDescription className="text-center">
+            Join TravelIncentive today!
+          </CardDescription>
         </CardHeader>
+        
         <CardContent className="space-y-4">
           <form action={formAction} className="space-y-4">
             <div className="space-y-2">
@@ -42,11 +48,11 @@ export default function Signup() {
               />
             </div>
             {state.message && <div className="text-sm text-green-600">{state.message}</div>}
-            <Button type="submit" className="w-full">
-              Sign Up
+            <Button type="submit" className="w-full cta-button">
+              Create Account
             </Button>
           </form>
-
+          
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
@@ -69,12 +75,12 @@ export default function Signup() {
             </form>
           </div>
 
-          <div className="text-center text-sm">
+          <p className="text-center text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link href="/login" className="text-primary hover:underline">
+            <Link href="/login" className="text-orange-600 hover:text-orange-700 underline">
               Sign in
             </Link>
-          </div>
+          </p>
         </CardContent>
       </Card>
     </div>

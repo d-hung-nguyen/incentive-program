@@ -56,13 +56,21 @@ export default function HomePage() {
     { label: 'Countries', value: '45+', icon: <MapPin className="h-5 w-5" /> },
   ];
 
+  const benefits = [
+    'Automated booking management and commission tracking',
+    'Real-time performance analytics and reporting',
+    'Integrated hotel and agency partner networks',
+    'Customizable incentive program structures',
+    '24/7 customer support and onboarding assistance',
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="hero-gradient min-h-screen">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur-sm">
+      <header className="glassmorphism sticky top-0 z-50 border-b">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center space-x-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+          <div className="animate-fade-in-left flex items-center space-x-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-600">
               <Building2 className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-bold text-gray-900">TravelIncentive</span>
@@ -71,57 +79,65 @@ export default function HomePage() {
           <nav className="hidden items-center space-x-6 md:flex">
             <Link
               href="#features"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900"
+              className="nav-link text-sm font-medium text-gray-600 hover:text-gray-900"
             >
               Features
             </Link>
-            <Link href="#about" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+            <Link
+              href="#about"
+              className="nav-link text-sm font-medium text-gray-600 hover:text-gray-900"
+            >
               About
             </Link>
-            <Link href="#contact" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+            <Link
+              href="#contact"
+              className="nav-link text-sm font-medium text-gray-600 hover:text-gray-900"
+            >
               Contact
             </Link>
           </nav>
 
-          <div className="flex items-center space-x-4">
+          <div className="animate-fade-in-right flex items-center space-x-4">
             <Link href="/login">
               <Button variant="outline" size="sm">
                 Sign In
               </Button>
             </Link>
             <Link href="/signup">
-              <Button size="sm">Get Started</Button>
+              <Button size="sm" className="cta-button">
+                Get Started
+              </Button>
             </Link>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="px-4 py-20">
+      <section className="bg-pattern px-4 py-20">
         <div className="container mx-auto text-center">
-          <Badge variant="secondary" className="mb-4">
+          <Badge variant="secondary" className="animate-fade-in-up mb-4">
             🎯 Travel Industry Solution
           </Badge>
 
-          <h1 className="mb-6 text-4xl font-bold text-gray-900 md:text-6xl">
+          <h1 className="animate-fade-in-up animate-delay-100 mb-6 text-4xl font-bold md:text-6xl">
             Empower Your Travel
-            <span className="text-blue-600"> Agency Network</span>
+            <span className="text-gradient"> Agency Network</span>
           </h1>
 
-          <p className="mx-auto mb-8 max-w-3xl text-xl text-gray-600">
+          <p className="animate-fade-in-up animate-delay-200 mx-auto mb-8 max-w-3xl text-xl text-gray-600">
             The complete incentive management platform designed for travel agencies. Boost
             partnerships, track performance, and grow your business with intelligent automation.
           </p>
 
-          <div className="mb-12 flex flex-col justify-center gap-4 sm:flex-row">
+          <div className="animate-fade-in-up animate-delay-300 mb-12 flex flex-col justify-center gap-4 sm:flex-row">
             <Link href="/signup">
-              <Button size="lg" className="w-full sm:w-auto">
+              <Button size="lg" className="cta-button w-full sm:w-auto">
                 Start Free Trial
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
             <Link href="/dashboard">
-              <Button variant="outline" size="lg" className="w-full sm:w-auto">
+              <Button variant="outline" size="lg" className="shadow-glow w-full sm:w-auto">
                 View Demo Dashboard
               </Button>
             </Link>
@@ -130,8 +146,11 @@ export default function HomePage() {
           {/* Stats */}
           <div className="mx-auto grid max-w-4xl grid-cols-2 gap-8 md:grid-cols-4">
             {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="mb-2 flex justify-center text-blue-600">{stat.icon}</div>
+              <div
+                key={index}
+                className={`stat-item animate-fade-in-up text-center animate-delay-${(index + 4) * 100}`}
+              >
+                <div className="mb-2 flex justify-center text-orange-600">{stat.icon}</div>
                 <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
                 <div className="text-sm text-gray-600">{stat.label}</div>
               </div>
@@ -144,10 +163,10 @@ export default function HomePage() {
       <section id="features" className="bg-white px-4 py-20">
         <div className="container mx-auto">
           <div className="mb-16 text-center">
-            <h2 className="mb-4 text-3xl font-bold text-gray-900 md:text-4xl">
+            <h2 className="animate-fade-in-up mb-4 text-3xl font-bold text-gray-900 md:text-4xl">
               Everything You Need to Manage Travel Incentives
             </h2>
-            <p className="mx-auto max-w-2xl text-xl text-gray-600">
+            <p className="animate-fade-in-up animate-delay-100 mx-auto max-w-2xl text-xl text-gray-600">
               From agency partnerships to booking analytics, our platform provides all the tools you
               need to run successful incentive programs.
             </p>
@@ -155,10 +174,13 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
             {features.map((feature, index) => (
-              <Card key={index} className="border-0 shadow-lg transition-shadow hover:shadow-xl">
+              <Card
+                key={index}
+                className={`feature-card animate-fade-in-up animate-delay-${(index + 1) * 100}`}
+              >
                 <CardHeader>
                   <div className="flex items-center space-x-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+                    <div className="feature-icon flex h-10 w-10 items-center justify-center rounded-lg">
                       {feature.icon}
                     </div>
                     <CardTitle className="text-lg">{feature.title}</CardTitle>
@@ -177,20 +199,17 @@ export default function HomePage() {
       <section className="bg-gray-50 px-4 py-20">
         <div className="container mx-auto">
           <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
-            <div>
+            <div className="animate-fade-in-left">
               <h2 className="mb-6 text-3xl font-bold text-gray-900 md:text-4xl">
                 Why Travel Agencies Choose Our Platform
               </h2>
 
               <div className="space-y-4">
-                {[
-                  'Automated booking management and commission tracking',
-                  'Real-time performance analytics and reporting',
-                  'Integrated hotel and agency partner networks',
-                  'Customizable incentive program structures',
-                  '24/7 customer support and onboarding assistance',
-                ].map((benefit, index) => (
-                  <div key={index} className="flex items-start space-x-3">
+                {benefits.map((benefit, index) => (
+                  <div
+                    key={index}
+                    className={`benefit-item animate-fade-in-left flex items-start space-x-3 animate-delay-${(index + 1) * 100}`}
+                  >
                     <CheckCircle className="mt-0.5 h-6 w-6 flex-shrink-0 text-green-500" />
                     <p className="text-gray-700">{benefit}</p>
                   </div>
@@ -199,7 +218,7 @@ export default function HomePage() {
 
               <div className="mt-8">
                 <Link href="/signup">
-                  <Button size="lg">
+                  <Button size="lg" className="cta-button">
                     Get Started Today
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -207,9 +226,9 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="lg:pl-8">
-              <Card className="border-0 bg-gradient-to-br from-blue-500 to-indigo-600 p-6 text-white">
-                <div className="space-y-4">
+            <div className="animate-fade-in-right lg:pl-8">
+              <Card className="success-card relative z-10 border-0 p-6 text-white">
+                <div className="relative z-10 space-y-4">
                   <div className="flex items-center space-x-2">
                     <Award className="h-6 w-6" />
                     <span className="font-semibold">Success Story</span>
@@ -233,15 +252,15 @@ export default function HomePage() {
       {/* CTA Section */}
       <section className="bg-blue-600 px-4 py-20">
         <div className="container mx-auto text-center text-white">
-          <h2 className="mb-4 text-3xl font-bold md:text-4xl">
+          <h2 className="animate-fade-in-up mb-4 text-3xl font-bold md:text-4xl">
             Ready to Transform Your Travel Business?
           </h2>
-          <p className="mx-auto mb-8 max-w-2xl text-xl opacity-90">
+          <p className="animate-fade-in-up animate-delay-100 mx-auto mb-8 max-w-2xl text-xl opacity-90">
             Join thousands of travel professionals who trust our platform to manage their incentive
             programs and grow their business.
           </p>
 
-          <div className="flex flex-col justify-center gap-4 sm:flex-row">
+          <div className="animate-fade-in-up animate-delay-200 flex flex-col justify-center gap-4 sm:flex-row">
             <Link href="/signup">
               <Button size="lg" variant="secondary" className="w-full sm:w-auto">
                 Start Your Free Trial
@@ -261,12 +280,12 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 px-4 py-12 text-white">
+      <footer className="footer-gradient px-4 py-12 text-white">
         <div className="container mx-auto">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
-            <div>
+            <div className="animate-fade-in-up">
               <div className="mb-4 flex items-center space-x-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-600">
                   <Building2 className="h-5 w-5 text-white" />
                 </div>
                 <span className="text-xl font-bold">TravelIncentive</span>
@@ -276,63 +295,63 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div>
+            <div className="animate-fade-in-up animate-delay-100">
               <h3 className="mb-4 font-semibold">Product</h3>
               <ul className="space-y-2 text-gray-400">
                 <li>
-                  <Link href="#" className="hover:text-white">
+                  <Link href="#" className="nav-link hover:text-white">
                     Features
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-white">
+                  <Link href="#" className="nav-link hover:text-white">
                     Pricing
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-white">
+                  <Link href="#" className="nav-link hover:text-white">
                     API
                   </Link>
                 </li>
               </ul>
             </div>
 
-            <div>
+            <div className="animate-fade-in-up animate-delay-200">
               <h3 className="mb-4 font-semibold">Company</h3>
               <ul className="space-y-2 text-gray-400">
                 <li>
-                  <Link href="#" className="hover:text-white">
+                  <Link href="#" className="nav-link hover:text-white">
                     About
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-white">
+                  <Link href="#" className="nav-link hover:text-white">
                     Contact
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-white">
+                  <Link href="#" className="nav-link hover:text-white">
                     Support
                   </Link>
                 </li>
               </ul>
             </div>
 
-            <div>
+            <div className="animate-fade-in-up animate-delay-300">
               <h3 className="mb-4 font-semibold">Legal</h3>
               <ul className="space-y-2 text-gray-400">
                 <li>
-                  <Link href="#" className="hover:text-white">
+                  <Link href="#" className="nav-link hover:text-white">
                     Privacy
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-white">
+                  <Link href="#" className="nav-link hover:text-white">
                     Terms
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-white">
+                  <Link href="#" className="nav-link hover:text-white">
                     Security
                   </Link>
                 </li>
@@ -340,7 +359,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="mt-8 border-t border-gray-800 pt-8 text-center text-gray-400">
+          <div className="animate-fade-in-up animate-delay-400 mt-8 border-t border-gray-800 pt-8 text-center text-gray-400">
             <p>&copy; 2025 TravelIncentive. All rights reserved.</p>
           </div>
         </div>

@@ -221,50 +221,26 @@ export async function getAllPrograms() {
   const supabase = createClient();
 
   try {
-    // Get programs first without joins
-    const { data: programs, error } = await supabase
-      .from('incentive_programs')
-      .select('*')
+    const { data, error } = await supabase
+      .from('programs')
+      .select(
+        `
+        *,
+        organizations (
+          id,
+          name,
+          type
+        )
+      `
+      )
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching all programs:', error);
+      console.error('Error fetching programs:', error);
       return [];
     }
 
-    if (!programs) return [];
-
-    // Get organization data separately for each program
-    const programsWithOrganizations = await Promise.all(
-      programs.map(async (program) => {
-        try {
-          if (program.organization_id) {
-            const { data: org } = await supabase
-              .from('organizations')
-              .select('name, type')
-              .eq('id', program.organization_id)
-              .single();
-
-            return {
-              ...program,
-              organizations: org,
-            };
-          }
-          return {
-            ...program,
-            organizations: null,
-          };
-        } catch (progError) {
-          console.error('Error processing program:', progError);
-          return {
-            ...program,
-            organizations: null,
-          };
-        }
-      })
-    );
-
-    return programsWithOrganizations;
+    return data || [];
   } catch (error) {
     console.error('Error in getAllPrograms:', error);
     return [];
@@ -639,7 +615,7 @@ export async function getAllUsers() {
 // Get system statistics function
 export async function getSystemStats() {
   const supabase = createClient();
-  
+
   try {
     const [
       { count: totalOrganizations },
@@ -667,5 +643,168 @@ export async function getSystemStats() {
       totalPrograms: 0,
       totalTransactions: 0,
     };
+  }
+}
+
+// Get room type points from database
+export async function getRoomTypePoints() {
+  const supabase = createClient();
+
+  try {
+    const { data, error } = await supabase
+      .from('room_type_points')
+      .select('*')
+      .eq('is_active', true)
+      .order('points_per_night', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching room type points:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getRoomTypePoints:', error);
+    return [];
+  }
+}
+
+// Add points to agency
+export async function addPointsToAgency(
+  agencyId: string,
+  bookingId: string,
+  pointsEarned: number,
+  pointsType: string,
+  calculationDetails: any
+) {
+  const supabase = createClient();
+
+  try {
+    const { data, error } = await supabase
+      .from('agency_points')
+      .insert({
+        agency_id: agencyId,
+        booking_id: bookingId,
+        points_earned: pointsEarned,
+        points_type: pointsType,
+        calculation_details: calculationDetails,
+      })
+      .select();
+
+    if (error) {
+      console.error('Error adding points:', error);
+      return null;
+    }
+
+    return data[0];
+  } catch (error) {
+    console.error('Error in addPointsToAgency:', error);
+    return null;
+  }
+}
+
+// Get agency points balance
+export async function getAgencyPointsBalance(agencyId: string) {
+  const supabase = createClient();
+
+  try {
+    // Get total earned points
+    const { data: earnedPoints, error: earnedError } = await supabase
+      .from('agency_points')
+      .select('points_earned')
+      .eq('agency_id', agencyId);
+
+    if (earnedError) {
+      console.error('Error fetching earned points:', earnedError);
+      return 0;
+    }
+
+    // Get total redeemed points
+    const { data: redeemedPoints, error: redeemedError } = await supabase
+      .from('point_redemptions')
+      .select('points_used')
+      .eq('agency_id', agencyId)
+      .eq('status', 'redeemed');
+
+    if (redeemedError) {
+      console.error('Error fetching redeemed points:', redeemedError);
+      return 0;
+    }
+
+    const totalEarned = earnedPoints?.reduce((sum, p) => sum + p.points_earned, 0) || 0;
+    const totalRedeemed = redeemedPoints?.reduce((sum, p) => sum + p.points_used, 0) || 0;
+
+    return totalEarned - totalRedeemed;
+  } catch (error) {
+    console.error('Error in getAgencyPointsBalance:', error);
+    return 0;
+  }
+}
+
+// Create voucher redemption
+export async function createVoucherRedemption(
+  agencyId: string,
+  pointsUsed: number,
+  voucherType: string,
+  voucherValue: number
+) {
+  const supabase = createClient();
+
+  try {
+    const { data, error } = await supabase
+      .from('point_redemptions')
+      .insert({
+        agency_id: agencyId,
+        points_used: pointsUsed,
+        voucher_type: voucherType,
+        voucher_value: voucherValue,
+        status: 'pending',
+      })
+      .select();
+
+    if (error) {
+      console.error('Error creating voucher redemption:', error);
+      return null;
+    }
+
+    return data[0];
+  } catch (error) {
+    console.error('Error in createVoucherRedemption:', error);
+    return null;
+  }
+}
+
+// Get all agency points transactions
+export async function getAgencyPointsHistory(agencyId: string) {
+  const supabase = createClient();
+
+  try {
+    const { data, error } = await supabase
+      .from('agency_points')
+      .select(
+        `
+        *,
+        bookings (
+          id,
+          guest_name,
+          arrival_date,
+          departure_date,
+          hotels (hotel_name),
+          room_types (room_type_name)
+        )
+      `
+      )
+      .eq('agency_id', agencyId)
+      .order('earned_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching points history:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getAgencyPointsHistory:', error);
+    return [];
   }
 }
