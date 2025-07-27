@@ -69,32 +69,32 @@ git clone https://github.com/your-username/incentive-program.git
 cd incentive-program
 ```
 
-2. Install dependencies:
+1. Install dependencies:
 
 ```bash
 npm install
 ```
 
-3. Set up environment variables:
+1. Set up environment variables:
 
 ```bash
 cp .env.example .env.local
 ```
 
-4. Add your Supabase credentials to `.env.local`:
+1. Add your Supabase credentials to `.env.local`:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-5. Run the development server:
+Run the development server:
 
 ```bash
 npm run dev
 ```
 
-6. Open [http://localhost:3000](http://localhost:3000) in your browser.
+1. Open <http://localhost:3000> in your browser.
 
 ## Database Schema
 
@@ -157,7 +157,7 @@ point_redemptions (
 
 ## API Endpoints
 
-### Bookings
+### Booking API Endpoints
 
 - `GET /api/bookings` - List all bookings
 - `POST /api/bookings` - Create new booking
@@ -217,7 +217,7 @@ npm run start
 
 ### Project Structure
 
-```
+```text
 ├── app/                    # Next.js 13+ app directory
 │   ├── dashboard/         # Admin dashboard
 │   ├── api/              # API routes
@@ -265,7 +265,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 For support and questions:
 
 - Create an issue on GitHub
-- Email: support@your-domain.com
+- Email: [support@your-domain.com](mailto:support@your-domain.com)
 - Documentation: [Wiki](https://github.com/your-username/incentive-program/wiki)
 
 ## Roadmap
