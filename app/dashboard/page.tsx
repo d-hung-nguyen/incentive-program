@@ -79,7 +79,7 @@ export default async function AdminDashboard() {
     ]);
 
   // Mock data for programs - remove this if you have real data
-  const allPrograms = [];
+  const allPrograms: { is_active: boolean }[] = [];
 
   return (
     <main className="flex-1">
