@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Plane,
   Calendar,
@@ -24,16 +25,116 @@ import {
   FileText,
   Building2,
   Mail,
-  Phone,
   AlertCircle,
   Star,
   Clock,
   DollarSign,
 } from 'lucide-react';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
+
+// TypeScript interfaces for type safety
+interface UserProfile {
+  id: string;
+  user_type: 'agent' | 'resort' | 'admin';
+  created_at: string;
+}
+
+interface Agency {
+  id: string;
+  name: string;
+  city: string;
+  country: string;
+  email: string;
+  telephone: string;
+  zip_code: string;
+  is_active: boolean;
+}
+
+interface Agent {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  telephone: string;
+  is_active: boolean;
+  created_at: string;
+  agencies: Agency;
+  agency_id: string;
+}
+
+interface Hotel {
+  hotel_name: string;
+  location_city: string;
+  location_country: string;
+  star_rating: number;
+}
+
+interface RoomType {
+  room_type_name: string;
+  max_occupancy: number;
+}
+
+interface Booking {
+  id: string;
+  confirmation_number: string;
+  guest_name: string;
+  arrival_date: string;
+  departure_date: string;
+  booking_status: 'confirmed' | 'completed' | 'cancelled' | 'pending';
+  total_amount: number;
+  created_at: string;
+  agent_id: string;
+  hotels?: Hotel;
+  room_types?: RoomType;
+  agencies?: Pick<Agency, 'name' | 'city' | 'country'>;
+}
+
+interface UserPoints {
+  id: string;
+  user_id: string;
+  points: number;
+  created_at: string;
+}
+
+interface PointTransaction {
+  id: string;
+  user_id: string;
+  points: number;
+  description: string;
+  created_at: string;
+}
+
+interface VoucherRedemption {
+  id: string;
+  agent_id: string;
+  voucher_type: string;
+  voucher_value: number;
+  points_used: number;
+  status: 'issued' | 'redeemed' | 'expired';
+  voucher_code?: string;
+  created_at: string;
+  redeemed_at?: string;
+}
+
+interface Colleague {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  is_active: boolean;
+}
+
+interface DashboardData {
+  bookings: Booking[];
+  points: UserPoints[];
+  transactions: PointTransaction[];
+  vouchers: VoucherRedemption[];
+  colleagues: Colleague[];
+}
 
 // Updated database functions to match new schema
-async function getUserProfile(userId: string) {
+async function getUserProfile(userId: string): Promise<UserProfile | null> {
   const supabase = createClient();
 
   const { data, error } = await supabase
@@ -47,10 +148,10 @@ async function getUserProfile(userId: string) {
     return null;
   }
 
-  return data;
+  return data as UserProfile;
 }
 
-async function getAgentWithAgency(agentId: string) {
+async function getAgentWithAgency(agentId: string): Promise<Agent | null> {
   const supabase = createClient();
 
   const { data, error } = await supabase
@@ -78,122 +179,173 @@ async function getAgentWithAgency(agentId: string) {
     return null;
   }
 
-  return data;
+  return data as Agent;
 }
 
-async function getAgentBookings(agentId: string) {
+// Optimized combined data fetching function
+async function getAgentDashboardData(agentId: string, agencyId: string): Promise<DashboardData> {
   const supabase = createClient();
 
-  // Get bookings directly associated with the agent
-  const { data, error } = await supabase
-    .from('bookings')
-    .select(
+  // Combine all agent-related data fetches in parallel
+  const [
+    { data: bookings, error: bookingsError },
+    { data: points, error: pointsError },
+    { data: transactions, error: transactionsError },
+    { data: vouchers, error: vouchersError },
+    { data: colleagues, error: colleaguesError },
+  ] = await Promise.all([
+    // Get bookings with related data
+    supabase
+      .from('bookings')
+      .select(
+        `
+        *,
+        hotels (
+          hotel_name,
+          location_city,
+          location_country,
+          star_rating
+        ),
+        room_types (
+          room_type_name,
+          max_occupancy
+        ),
+        agencies (
+          name,
+          city,
+          country
+        )
       `
-      *,
-      hotels (
-        hotel_name,
-        location_city,
-        location_country,
-        star_rating
-      ),
-      room_types (
-        room_type_name,
-        max_occupancy
-      ),
-      agencies (
-        name,
-        city,
-        country
       )
-    `
-    )
-    .eq('agent_id', agentId) // Assuming bookings table has agent_id field
-    .order('created_at', { ascending: false });
+      .eq('agent_id', agentId)
+      .order('created_at', { ascending: false }),
 
-  if (error) {
-    console.error('Error fetching agent bookings:', error);
-    return [];
-  }
+    // Get user points
+    supabase.from('user_points').select('*').eq('user_id', agentId),
 
-  return data || [];
-}
+    // Get recent transactions (limited)
+    supabase
+      .from('point_transactions')
+      .select('*')
+      .eq('user_id', agentId)
+      .order('created_at', { ascending: false })
+      .limit(10),
 
-async function getAgentPoints(agentId: string) {
-  const supabase = createClient();
+    // Get voucher redemptions
+    supabase
+      .from('voucher_redemptions')
+      .select('*')
+      .eq('agent_id', agentId)
+      .order('created_at', { ascending: false }),
 
-  const { data, error } = await supabase.from('user_points').select('*').eq('user_id', agentId);
-
-  if (error) {
-    console.error('Error fetching agent points:', error);
-    return [];
-  }
-
-  return data || [];
-}
-
-async function getAgentTransactions(agentId: string, limit: number = 10) {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from('point_transactions')
-    .select('*')
-    .eq('user_id', agentId)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
-  if (error) {
-    console.error('Error fetching agent transactions:', error);
-    return [];
-  }
-
-  return data || [];
-}
-
-async function getAgentVoucherRedemptions(agentId: string) {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from('voucher_redemptions')
-    .select('*')
-    .eq('agent_id', agentId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching voucher redemptions:', error);
-    return [];
-  }
-
-  return data || [];
-}
-
-// Get other agents in the same agency
-async function getAgencyColleagues(agentId: string, agencyId: string) {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from('agents')
-    .select(
+    // Get agency colleagues
+    supabase
+      .from('agents')
+      .select(
+        `
+        id,
+        first_name,
+        last_name,
+        email,
+        is_active
       `
-      id,
-      first_name,
-      last_name,
-      email,
-      is_active
-    `
-    )
-    .eq('agencies.id', agencyId)
-    .neq('id', agentId)
-    .limit(5);
+      )
+      .eq('agency_id', agencyId)
+      .neq('id', agentId)
+      .limit(5),
+  ]);
 
-  if (error) {
-    console.error('Error fetching agency colleagues:', error);
-    return [];
-  }
+  // Handle errors for each query
+  if (bookingsError) console.error('Error fetching bookings:', bookingsError);
+  if (pointsError) console.error('Error fetching points:', pointsError);
+  if (transactionsError) console.error('Error fetching transactions:', transactionsError);
+  if (vouchersError) console.error('Error fetching vouchers:', vouchersError);
+  if (colleaguesError) console.error('Error fetching colleagues:', colleaguesError);
 
-  return data || [];
+  return {
+    bookings: (bookings || []) as Booking[],
+    points: (points || []) as UserPoints[],
+    transactions: (transactions || []) as PointTransaction[],
+    vouchers: (vouchers || []) as VoucherRedemption[],
+    colleagues: (colleagues || []) as Colleague[],
+  };
 }
 
-export default async function AgentDashboard() {
+// Loading skeleton components
+function StatsCardSkeleton() {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Skeleton className="h-4 w-[100px]" />
+        <Skeleton className="h-4 w-4" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="mb-2 h-8 w-[80px]" />
+        <Skeleton className="h-3 w-[120px]" />
+      </CardContent>
+    </Card>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <Card>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <TableHead key={i}>
+                  <Skeleton className="h-4 w-[80px]" />
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <TableRow key={i}>
+                {Array.from({ length: 8 }).map((_, j) => (
+                  <TableCell key={j}>
+                    <Skeleton className="h-4 w-[60px]" />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AgencyInfoSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Building2 className="h-5 w-5" />
+          Agency Information
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i}>
+              <Skeleton className="mb-3 h-5 w-[120px]" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-[100px]" />
+                <Skeleton className="h-4 w-[140px]" />
+                <Skeleton className="h-4 w-[80px]" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+async function DashboardContent() {
   const supabase = createClient();
   const {
     data: { user },
@@ -226,15 +378,16 @@ export default async function AgentDashboard() {
     );
   }
 
-  // Fetch agent-specific data (all tied to the individual agent, not agency)
-  const [agentPoints, recentTransactions, agentBookings, voucherRedemptions, agencyColleagues] =
-    await Promise.all([
-      getAgentPoints(user.id),
-      getAgentTransactions(user.id, 10),
-      getAgentBookings(user.id),
-      getAgentVoucherRedemptions(user.id),
-      getAgencyColleagues(user.id, agentData.agencies.id),
-    ]);
+  // Fetch all agent-specific data in one optimized call
+  const dashboardData = await getAgentDashboardData(user.id, agentData.agencies.id);
+
+  const {
+    bookings: agentBookings,
+    points: agentPoints,
+    transactions: recentTransactions,
+    vouchers: voucherRedemptions,
+    colleagues: agencyColleagues,
+  } = dashboardData;
 
   const totalPoints = agentPoints.reduce((sum, up) => sum + up.points, 0);
   const totalBookings = agentBookings.length;
@@ -248,6 +401,8 @@ export default async function AgentDashboard() {
   // Calculate performance metrics
   const confirmedBookings = agentBookings.filter((b) => b.booking_status === 'confirmed').length;
   const completedBookings = agentBookings.filter((b) => b.booking_status === 'completed').length;
+  const pendingBookings = agentBookings.filter((b) => b.booking_status === 'pending').length;
+  const cancelledBookings = agentBookings.filter((b) => b.booking_status === 'cancelled').length;
   const averageBookingValue = totalBookings > 0 ? totalRevenue / totalBookings : 0;
 
   return (
@@ -768,11 +923,87 @@ export default async function AgentDashboard() {
                     <div className="text-sm text-muted-foreground">My Success Rate</div>
                   </div>
                 </div>
+
+                {/* Add detailed booking breakdown */}
+                <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-green-600">{completedBookings}</div>
+                    <div className="text-sm text-muted-foreground">Completed</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-blue-600">{confirmedBookings}</div>
+                    <div className="text-sm text-muted-foreground">Confirmed</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-yellow-600">{pendingBookings}</div>
+                    <div className="text-sm text-muted-foreground">Pending</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-red-600">{cancelledBookings}</div>
+                    <div className="text-sm text-muted-foreground">Cancelled</div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function DashboardLoading() {
+  return (
+    <div className="container mx-auto space-y-6 py-6">
+      {/* Header Skeleton */}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="mb-2 flex items-center gap-2">
+            <Plane className="h-8 w-8 text-blue-600" />
+            <Skeleton className="h-8 w-[200px]" />
+          </div>
+          <Skeleton className="mb-1 h-5 w-[250px]" />
+          <Skeleton className="h-4 w-[300px]" />
+        </div>
+        <div className="text-right">
+          <Skeleton className="mb-2 h-6 w-[120px]" />
+          <Skeleton className="h-3 w-[150px]" />
+        </div>
+      </div>
+
+      {/* Stats Cards Skeleton */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <StatsCardSkeleton key={i} />
+        ))}
+      </div>
+
+      {/* Agency Info Skeleton */}
+      <AgencyInfoSkeleton />
+
+      {/* Tabs Skeleton */}
+      <div className="space-y-4">
+        <div className="flex space-x-1 rounded-lg bg-muted p-1">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-8 w-[120px]" />
+          ))}
+        </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-6 w-[200px]" />
+            <Skeleton className="h-9 w-[150px]" />
+          </div>
+          <TableSkeleton />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function AgentDashboard() {
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <DashboardContent />
+    </Suspense>
   );
 }

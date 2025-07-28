@@ -1,28 +1,35 @@
 'use server';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
-import { revalidatePath } from 'next/cache';
 
 const PUBLIC_URL = process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3000';
 
-export async function loginUser(currentState: { message: string }, formData: FormData) {
+export async function loginUser(_currentState: { message: string }, formData: FormData) {
   const supabase = createClient();
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (error) {
-    return {
-      message: error.message,
-    };
+  // Validate inputs
+  if (!email || !password) {
+    return { message: 'Email and password are required' };
   }
 
-  revalidatePath('/', 'layout');
-  redirect('/dashboard');
+  try {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      return { message: error.message };
+    }
+
+    // Redirect after successful login
+    redirect('/dashboard');
+  } catch (error) {
+    console.error('Login error:', error);
+    return { message: 'An unexpected error occurred' };
+  }
 }
 
 export async function logout() {
@@ -59,28 +66,42 @@ export async function signInWithGithub() {
   }
 }
 
-export async function signup(currentState: { message: string }, formData: FormData) {
+export async function signupUser(_currentState: { message: string }, formData: FormData) {
   const supabase = createClient();
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
+  const userType = formData.get('userType') as string;
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: `${PUBLIC_URL}/auth/callback`,
-    },
-  });
-
-  if (error) {
-    return {
-      message: error.message,
-    };
+  // Validate inputs
+  if (!email || !password || !userType) {
+    return { message: 'All fields are required' };
   }
 
-  return {
-    message: 'Check your email to continue sign in process',
-  };
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          user_type: userType,
+        },
+      },
+    });
+
+    if (error) {
+      return { message: error.message };
+    }
+
+    if (data.user && !data.user.email_confirmed_at) {
+      return { message: 'Please check your email to confirm your account' };
+    }
+
+    // Redirect after successful signup
+    redirect('/dashboard');
+  } catch (error) {
+    console.error('Signup error:', error);
+    return { message: 'An unexpected error occurred' };
+  }
 }
 
 export async function forgotPassword(prevState: any, formData: FormData) {
@@ -103,31 +124,26 @@ export async function forgotPassword(prevState: any, formData: FormData) {
   return { message: 'Password reset email sent! Check your inbox.' };
 }
 
-export async function resetPassword(prevState: any, formData: FormData) {
-  const password = formData.get('password') as string;
-  const confirmPassword = formData.get('confirmPassword') as string;
-
-  if (!password || !confirmPassword) {
-    return { message: 'Both password fields are required' };
-  }
-
-  if (password !== confirmPassword) {
-    return { message: 'Passwords do not match' };
-  }
-
-  if (password.length < 6) {
-    return { message: 'Password must be at least 6 characters' };
-  }
-
+export async function resetPassword(_currentState: { message: string }, formData: FormData) {
   const supabase = createClient();
+  const email = formData.get('email') as string;
 
-  const { error } = await supabase.auth.updateUser({
-    password: password,
-  });
-
-  if (error) {
-    return { message: 'Error updating password' };
+  if (!email) {
+    return { message: 'Email is required' };
   }
 
-  redirect('/login?message=Password updated successfully');
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${PUBLIC_URL}/auth/reset-password`,
+    });
+
+    if (error) {
+      return { message: error.message };
+    }
+
+    return { message: 'Password reset email sent! Please check your inbox.' };
+  } catch (error) {
+    console.error('Reset password error:', error);
+    return { message: 'An unexpected error occurred' };
+  }
 }

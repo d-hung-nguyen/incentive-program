@@ -3,23 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  User,
-  Building2,
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
-  Users,
-  TrendingUp,
-  Award,
-  Plane,
-  Plus,
-  Eye,
-  FileText,
-  Globe,
-} from 'lucide-react';
-import { redirect } from 'next/navigation';
+import { User, Building2, Mail, Phone, Calendar, Eye, Plus, Users } from 'lucide-react';
 
 async function getAllAgentsWithAgencies() {
   const supabase = createClient();

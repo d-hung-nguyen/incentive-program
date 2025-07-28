@@ -15,16 +15,15 @@ export interface Organization {
 export interface Agency {
   id: string;
   name: string;
-  zip_code: string;
   city: string;
   country: string;
+  zip_code: string;
   email: string;
   telephone: string;
+  address?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
-  agent_id?: string;
-  agents?: Agent;
 }
 
 export interface Agent {
@@ -33,10 +32,18 @@ export interface Agent {
   last_name: string;
   email: string;
   telephone: string;
+  agency_id?: string;
+  // Denormalized fields
+  agency_name?: string;
+  agency_city?: string;
+  agency_country?: string;
+  agency_zip_code?: string;
+  agency_email?: string;
+  agency_telephone?: string;
+  agency_address?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
-  agencies?: Agency;
 }
 
 export interface UserProfile {
@@ -174,4 +181,8 @@ export interface RoomType {
     hotel_name: string;
     location_city: string;
   };
+}
+
+export interface AgentWithAgency extends Agent {
+  agencies?: Agency | null;
 }

@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const searchTerm = searchParams.get('q');
+  const q = searchParams.get('q');
 
-  if (!searchTerm) {
-    return NextResponse.json({ error: 'Search term is required' }, { status: 400 });
+  if (!q) {
+    return NextResponse.json({ error: 'Search query is required' }, { status: 400 });
   }
 
   try {
@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('agencies')
-      .select('id, name, city, country, zip_code, address, is_active') // Include address
-      .or(`name.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%,country.ilike.%${searchTerm}%`)
+      .select('id, name, city, country, zip_code, email, telephone, is_active')
+      .or(`name.ilike.%${q}%,city.ilike.%${q}%,country.ilike.%${q}%`)
       .eq('is_active', true)
       .order('name', { ascending: true })
       .limit(10);

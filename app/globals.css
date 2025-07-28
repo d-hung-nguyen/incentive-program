@@ -1,7 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+@tailwind screens;
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -69,6 +70,70 @@
     font-feature-settings:
       'rlig' 1,
       'calt' 1;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Headings */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin-top: 0;
+    margin-bottom: 0.5em;
+    color: var(--foreground);
+    font-family: 'Playfair Display', serif;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    line-height: 1.2;
+    font-weight: 700;
+  }
+  h2 {
+    font-size: 2rem;
+    line-height: 1.3;
+    font-weight: 600;
+  }
+  h3 {
+    font-size: 1.75rem;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+  h4 {
+    font-size: 1.5rem;
+    line-height: 1.5;
+    font-weight: 600;
+  }
+  h5 {
+    font-size: 1.25rem;
+    line-height: 1.6;
+    font-weight: 600;
+  }
+  h6 {
+    font-size: 1rem;
+    line-height: 1.6;
+    font-weight: 600;
+  }
+
+  /* Paragraphs */
+  p {
+    margin-top: 0;
+    margin-bottom: 1em;
+    line-height: 1.75;
+  }
+
+  /* Links */
+  a {
+    color: var(--primary);
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
   }
 
   html {

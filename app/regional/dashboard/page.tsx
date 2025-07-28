@@ -80,7 +80,8 @@ export default async function RegionalDashboard() {
             Regional Dashboard
           </h1>
           <p className="text-muted-foreground">
-            Regional Manager - {userProfile.first_name} {userProfile.last_name}
+            Regional Manager - {userProfile.first_name || userProfile.email || 'User'}{' '}
+            {userProfile.last_name || ''}
           </p>
           <p className="text-sm text-muted-foreground">
             Region: {userProfile.region || 'Not specified'}
