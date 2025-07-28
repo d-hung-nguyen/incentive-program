@@ -12,6 +12,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+// Add this export to force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default async function SetupProfile() {
   const supabase = createClient();
   const {
