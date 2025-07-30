@@ -499,23 +499,21 @@ export default function AgentApplicationForm() {
                       </div>
                     )}
                     <div>
-                      <strong>Location:</strong> {formData.agency_zip_code}, {formData.agency_city}, {formData.agency_country}
+                      <strong>Location:</strong> {formData.agency_zip_code}, {formData.agency_city},{' '}
+                      {formData.agency_country}
                     </div>
                     {selectedAgency && (
                       <div className="mt-2">
-                        <Badge variant="outline">
-                          Existing Agency
-                        </Badge>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Agency details will always reflect the current information from our database
+                        <Badge variant="outline">Existing Agency</Badge>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Agency details will always reflect the current information from our
+                          database
                         </p>
                       </div>
                     )}
                     {!selectedAgency && (
                       <div className="mt-2">
-                        <Badge variant="default">
-                          New Agency
-                        </Badge>
+                        <Badge variant="default">New Agency</Badge>
                       </div>
                     )}
                   </CardContent>
@@ -533,8 +531,8 @@ export default function AgentApplicationForm() {
                       24-48 hours.
                     </p>
                     <p className="mt-2 text-sm text-blue-800">
-                      <strong>Note:</strong> If you select an existing agency, your agent profile will always 
-                      display the most current agency information from our database.
+                      <strong>Note:</strong> If you select an existing agency, your agent profile
+                      will always display the most current agency information from our database.
                     </p>
                   </div>
                 </div>

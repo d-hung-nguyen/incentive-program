@@ -1,1009 +1,117 @@
 import { createClient } from '@/utils/supabase/server';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Plane,
-  Calendar,
-  Users,
-  TrendingUp,
-  Award,
-  MapPin,
-  Hotel,
-  Plus,
-  Eye,
-  FileText,
-  Building2,
-  Mail,
-  AlertCircle,
-  Star,
-  Clock,
-  DollarSign,
-} from 'lucide-react';
-import { redirect } from 'next/navigation';
-import { Suspense } from 'react';
+import AgentBookingForm from '@/components/AgentBookingForm';
+import AgentBookingsList from '@/components/AgentBookingsList';
 
-// TypeScript interfaces for type safety
-interface UserProfile {
-  id: string;
-  user_type: 'agent' | 'resort' | 'admin';
-  created_at: string;
-}
+export const dynamic = 'force-dynamic';
 
-interface Agency {
-  id: string;
-  name: string;
-  city: string;
-  country: string;
-  email: string;
-  telephone: string;
-  zip_code: string;
-  is_active: boolean;
-}
+// Fixed agent data for development
+const FIXED_AGENT_DATA = {
+  id: 'dev-agent-123',
+  first_name: 'John',
+  last_name: 'Smith',
+  email: 'john.smith@example.com',
+  telephone: '+1-555-0123',
+  reward_points: 150,
+  agencies: {
+    name: 'Elite Travel Solutions',
+    city: 'San Francisco',
+    country: 'USA',
+  },
+};
 
-interface Agent {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  telephone: string;
-  is_active: boolean;
-  created_at: string;
-  agencies: Agency;
-  agency_id: string;
-}
-
-interface Hotel {
-  hotel_name: string;
-  location_city: string;
-  location_country: string;
-  star_rating: number;
-}
-
-interface RoomType {
-  room_type_name: string;
-  max_occupancy: number;
-}
-
-interface Booking {
-  id: string;
-  confirmation_number: string;
-  guest_name: string;
-  arrival_date: string;
-  departure_date: string;
-  booking_status: 'confirmed' | 'completed' | 'cancelled' | 'pending';
-  total_amount: number;
-  created_at: string;
-  agent_id: string;
-  hotels?: Hotel;
-  room_types?: RoomType;
-  agencies?: Pick<Agency, 'name' | 'city' | 'country'>;
-}
-
-interface UserPoints {
-  id: string;
-  user_id: string;
-  points: number;
-  created_at: string;
-}
-
-interface PointTransaction {
-  id: string;
-  user_id: string;
-  points: number;
-  description: string;
-  created_at: string;
-}
-
-interface VoucherRedemption {
-  id: string;
-  agent_id: string;
-  voucher_type: string;
-  voucher_value: number;
-  points_used: number;
-  status: 'issued' | 'redeemed' | 'expired';
-  voucher_code?: string;
-  created_at: string;
-  redeemed_at?: string;
-}
-
-interface Colleague {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  is_active: boolean;
-}
-
-interface DashboardData {
-  bookings: Booking[];
-  points: UserPoints[];
-  transactions: PointTransaction[];
-  vouchers: VoucherRedemption[];
-  colleagues: Colleague[];
-}
-
-// Updated database functions to match new schema
-async function getUserProfile(userId: string): Promise<UserProfile | null> {
+export default async function AgentDashboard() {
   const supabase = createClient();
 
-  const { data, error } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
-
-  if (error) {
-    console.error('Error fetching user profile:', error);
-    return null;
-  }
-
-  return data as UserProfile;
-}
-
-async function getAgentWithAgency(agentId: string): Promise<Agent | null> {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from('agents')
+  // Get bookings for the fixed agent
+  const { data: bookings } = await supabase
+    .from('bookings')
     .select(
       `
       *,
-      agencies!inner (
-        id,
-        name,
-        city,
-        country,
-        email,
-        telephone,
-        zip_code,
-        is_active
+      hotels!inner(
+        hotel_name,
+        location_city,
+        location_country
+      ),
+      room_types!inner(
+        room_type_name,
+        points_per_night,
+        category
       )
     `
     )
-    .eq('id', agentId)
-    .single();
+    .eq('agent_id', FIXED_AGENT_DATA.id)
+    .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching agent with agency:', error);
-    return null;
-  }
-
-  return data as Agent;
-}
-
-// Optimized combined data fetching function
-async function getAgentDashboardData(agentId: string, agencyId: string): Promise<DashboardData> {
-  const supabase = createClient();
-
-  // Combine all agent-related data fetches in parallel
-  const [
-    { data: bookings, error: bookingsError },
-    { data: points, error: pointsError },
-    { data: transactions, error: transactionsError },
-    { data: vouchers, error: vouchersError },
-    { data: colleagues, error: colleaguesError },
-  ] = await Promise.all([
-    // Get bookings with related data
-    supabase
-      .from('bookings')
-      .select(
-        `
-        *,
-        hotels (
-          hotel_name,
-          location_city,
-          location_country,
-          star_rating
-        ),
-        room_types (
-          room_type_name,
-          max_occupancy
-        ),
-        agencies (
-          name,
-          city,
-          country
-        )
-      `
-      )
-      .eq('agent_id', agentId)
-      .order('created_at', { ascending: false }),
-
-    // Get user points
-    supabase.from('user_points').select('*').eq('user_id', agentId),
-
-    // Get recent transactions (limited)
-    supabase
-      .from('point_transactions')
-      .select('*')
-      .eq('user_id', agentId)
-      .order('created_at', { ascending: false })
-      .limit(10),
-
-    // Get voucher redemptions
-    supabase
-      .from('voucher_redemptions')
-      .select('*')
-      .eq('agent_id', agentId)
-      .order('created_at', { ascending: false }),
-
-    // Get agency colleagues
-    supabase
-      .from('agents')
-      .select(
-        `
-        id,
-        first_name,
-        last_name,
-        email,
-        is_active
-      `
-      )
-      .eq('agency_id', agencyId)
-      .neq('id', agentId)
-      .limit(5),
-  ]);
-
-  // Handle errors for each query
-  if (bookingsError) console.error('Error fetching bookings:', bookingsError);
-  if (pointsError) console.error('Error fetching points:', pointsError);
-  if (transactionsError) console.error('Error fetching transactions:', transactionsError);
-  if (vouchersError) console.error('Error fetching vouchers:', vouchersError);
-  if (colleaguesError) console.error('Error fetching colleagues:', colleaguesError);
-
-  return {
-    bookings: (bookings || []) as Booking[],
-    points: (points || []) as UserPoints[],
-    transactions: (transactions || []) as PointTransaction[],
-    vouchers: (vouchers || []) as VoucherRedemption[],
-    colleagues: (colleagues || []) as Colleague[],
-  };
-}
-
-// Loading skeleton components
-function StatsCardSkeleton() {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <Skeleton className="h-4 w-[100px]" />
-        <Skeleton className="h-4 w-4" />
-      </CardHeader>
-      <CardContent>
-        <Skeleton className="mb-2 h-8 w-[80px]" />
-        <Skeleton className="h-3 w-[120px]" />
-      </CardContent>
-    </Card>
-  );
-}
+    <div className="container mx-auto p-6">
+      <div className="mx-auto max-w-6xl space-y-6">
+        {/* Development Notice */}
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <p className="text-sm text-blue-800">
+            🚧 <strong>Development Mode:</strong> Using fixed agent ID:{' '}
+            <code className="rounded bg-blue-100 px-1">{FIXED_AGENT_DATA.id}</code>
+          </p>
+        </div>
 
-function TableSkeleton() {
-  return (
-    <Card>
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {Array.from({ length: 8 }).map((_, i) => (
-                <TableHead key={i}>
-                  <Skeleton className="h-4 w-[80px]" />
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <TableRow key={i}>
-                {Array.from({ length: 8 }).map((_, j) => (
-                  <TableCell key={j}>
-                    <Skeleton className="h-4 w-[60px]" />
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
-}
-
-function AgencyInfoSkeleton() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Building2 className="h-5 w-5" />
-          Agency Information
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i}>
-              <Skeleton className="mb-3 h-5 w-[120px]" />
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-[100px]" />
-                <Skeleton className="h-4 w-[140px]" />
-                <Skeleton className="h-4 w-[80px]" />
-              </div>
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">
+              Welcome, {FIXED_AGENT_DATA.first_name} {FIXED_AGENT_DATA.last_name}
+            </h1>
+            <div className="mt-2 flex items-center gap-4 text-muted-foreground">
+              <span>📍 {FIXED_AGENT_DATA.agencies.name}</span>
+              <span>📧 {FIXED_AGENT_DATA.email}</span>
+              <span>📞 {FIXED_AGENT_DATA.telephone}</span>
             </div>
-          ))}
+          </div>
         </div>
-      </CardContent>
-    </Card>
-  );
-}
 
-async function DashboardContent() {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/login');
-  }
-
-  // Get user profile and check if they're an agent
-  const userProfile = await getUserProfile(user.id);
-
-  if (!userProfile || userProfile.user_type !== 'agent') {
-    redirect('/dashboard');
-  }
-
-  // Get agent data with linked agency - agents MUST have an agency
-  const agentData = await getAgentWithAgency(user.id);
-
-  if (!agentData || !agentData.agencies) {
-    // This should not happen in the new schema, but handle gracefully
-    return (
-      <div className="container mx-auto py-12 text-center">
-        <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
-        <h1 className="text-2xl font-bold text-red-600">Account Setup Required</h1>
-        <p className="text-muted-foreground">
-          Your agent account is not properly configured. Please contact system administrator.
-        </p>
-      </div>
-    );
-  }
-
-  // Fetch all agent-specific data in one optimized call
-  const dashboardData = await getAgentDashboardData(user.id, agentData.agencies.id);
-
-  const {
-    bookings: agentBookings,
-    points: agentPoints,
-    transactions: recentTransactions,
-    vouchers: voucherRedemptions,
-    colleagues: agencyColleagues,
-  } = dashboardData;
-
-  const totalPoints = agentPoints.reduce((sum, up) => sum + up.points, 0);
-  const totalBookings = agentBookings.length;
-  const thisMonthBookings = agentBookings.filter(
-    (booking) => new Date(booking.created_at).getMonth() === new Date().getMonth()
-  ).length;
-
-  const totalRevenue = agentBookings.reduce((sum, booking) => sum + (booking.total_amount || 0), 0);
-  const totalPointsUsed = voucherRedemptions.reduce((sum, voucher) => sum + voucher.points_used, 0);
-
-  // Calculate performance metrics
-  const confirmedBookings = agentBookings.filter((b) => b.booking_status === 'confirmed').length;
-  const completedBookings = agentBookings.filter((b) => b.booking_status === 'completed').length;
-  const pendingBookings = agentBookings.filter((b) => b.booking_status === 'pending').length;
-  const cancelledBookings = agentBookings.filter((b) => b.booking_status === 'cancelled').length;
-  const averageBookingValue = totalBookings > 0 ? totalRevenue / totalBookings : 0;
-
-  return (
-    <div className="container mx-auto space-y-6 py-6">
-      {/* Agent Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="flex items-center gap-2 text-3xl font-bold">
-            <Plane className="h-8 w-8 text-blue-600" />
-            Agent Dashboard
-          </h1>
-          <p className="text-muted-foreground">
-            Welcome back, {agentData.first_name} {agentData.last_name}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {agentData.agencies.name} - {agentData.agencies.city}, {agentData.agencies.country}
-          </p>
-        </div>
-        <div className="text-right">
-          <Badge variant="outline" className="mb-2 px-3 py-1">
-            AGENT ACCESS
-          </Badge>
-          <p className="text-xs text-muted-foreground">
-            Agent ID: {agentData.id.substring(0, 8)}...
-          </p>
-        </div>
-      </div>
-
-      {/* Agent Stats Overview - All personal to this agent */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">My Points</CardTitle>
-            <Award className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{totalPoints.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              {totalPointsUsed.toLocaleString()} points redeemed
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
+            <h3 className="font-semibold text-blue-900">Reward Points</h3>
+            <p className="text-3xl font-bold text-blue-600">{FIXED_AGENT_DATA.reward_points}</p>
+            <p className="text-sm text-blue-700">Available for redemption</p>
+          </div>
+          <div className="rounded-lg border border-green-200 bg-green-50 p-6">
+            <h3 className="font-semibold text-green-900">Total Bookings</h3>
+            <p className="text-3xl font-bold text-green-600">{bookings?.length || 0}</p>
+            <p className="text-sm text-green-700">Lifetime bookings</p>
+          </div>
+          <div className="rounded-lg border border-orange-200 bg-orange-50 p-6">
+            <h3 className="font-semibold text-orange-900">Pending</h3>
+            <p className="text-3xl font-bold text-orange-600">
+              {bookings?.filter((b) => b.verification_status === 'pending').length || 0}
             </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">My Bookings</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalBookings}</div>
-            <p className="text-xs text-muted-foreground">{thisMonthBookings} this month</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">My Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              €{totalRevenue.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              €{averageBookingValue.toFixed(0)} avg. booking
+            <p className="text-sm text-orange-700">Awaiting verification</p>
+          </div>
+          <div className="rounded-lg border border-purple-200 bg-purple-50 p-6">
+            <h3 className="font-semibold text-purple-900">Approved</h3>
+            <p className="text-3xl font-bold text-purple-600">
+              {bookings?.filter((b) => b.verification_status === 'approved').length || 0}
             </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {totalBookings > 0 ? Math.round((completedBookings / totalBookings) * 100) : 0}%
-            </div>
-            <p className="text-xs text-muted-foreground">{completedBookings} completed bookings</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Agency Information Card - Shows agency details and colleagues */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Agency Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <div>
-              <h4 className="mb-3 flex items-center gap-2 font-semibold">
-                <Building2 className="h-4 w-4" />
-                Agency Details
-              </h4>
-              <div className="space-y-2">
-                <p className="text-sm font-medium">{agentData.agencies.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {agentData.agencies.zip_code} {agentData.agencies.city}
-                </p>
-                <p className="text-sm text-muted-foreground">{agentData.agencies.country}</p>
-                <Badge
-                  variant={agentData.agencies.is_active ? 'default' : 'secondary'}
-                  className="mt-2"
-                >
-                  {agentData.agencies.is_active ? 'Active Agency' : 'Inactive Agency'}
-                </Badge>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="mb-3 flex items-center gap-2 font-semibold">
-                <Mail className="h-4 w-4" />
-                Contact Information
-              </h4>
-              <div className="space-y-2">
-                <p className="text-sm">{agentData.agencies.email}</p>
-                <p className="text-sm">{agentData.agencies.telephone}</p>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="mb-3 flex items-center gap-2 font-semibold">
-                <Users className="h-4 w-4" />
-                Agency Colleagues
-              </h4>
-              <div className="space-y-2">
-                {agencyColleagues.length > 0 ? (
-                  agencyColleagues.map((colleague) => (
-                    <div key={colleague.id} className="flex items-center justify-between">
-                      <p className="text-sm">
-                        {colleague.first_name} {colleague.last_name}
-                      </p>
-                      <Badge
-                        variant={colleague.is_active ? 'outline' : 'secondary'}
-                        className="text-xs"
-                      >
-                        {colleague.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    You&apos;re the only agent in this agency
-                  </p>
-                )}
-              </div>
-            </div>
+            <p className="text-sm text-purple-700">Verified bookings</p>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Agent Tabs */}
-      <Tabs defaultValue="bookings" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="bookings">My Bookings</TabsTrigger>
-          <TabsTrigger value="points">My Points & Rewards</TabsTrigger>
-          <TabsTrigger value="vouchers">My Vouchers</TabsTrigger>
-          <TabsTrigger value="profile">My Profile</TabsTrigger>
-        </TabsList>
-
-        {/* Bookings Tab - Individual agent's bookings */}
-        <TabsContent value="bookings" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">My Personal Bookings</h2>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">{totalBookings} total bookings</Badge>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                New Booking
-              </Button>
-            </div>
-          </div>
-
-          {agentBookings.length > 0 ? (
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Confirmation</TableHead>
-                      <TableHead>Guest Name</TableHead>
-                      <TableHead>Hotel</TableHead>
-                      <TableHead>Check-in</TableHead>
-                      <TableHead>Check-out</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>My Revenue</TableHead>
-                      <TableHead className="w-[80px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {agentBookings.map((booking) => (
-                      <TableRow key={booking.id}>
-                        <TableCell className="font-medium">{booking.confirmation_number}</TableCell>
-                        <TableCell>{booking.guest_name}</TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{booking.hotels?.hotel_name}</p>
-                            <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                              <MapPin className="h-3 w-3" />
-                              {booking.hotels?.location_city}, {booking.hotels?.location_country}
-                            </p>
-                            {booking.hotels?.star_rating && (
-                              <div className="mt-1 flex items-center gap-1">
-                                {Array.from({ length: booking.hotels.star_rating }).map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    className="h-3 w-3 fill-yellow-400 text-yellow-400"
-                                  />
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3 text-muted-foreground" />
-                            {new Date(booking.arrival_date).toLocaleDateString()}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3 text-muted-foreground" />
-                            {new Date(booking.departure_date).toLocaleDateString()}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              booking.booking_status === 'confirmed'
-                                ? 'default'
-                                : booking.booking_status === 'completed'
-                                  ? 'secondary'
-                                  : booking.booking_status === 'cancelled'
-                                    ? 'destructive'
-                                    : 'outline'
-                            }
-                          >
-                            {booking.booking_status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium text-green-600">
-                            €{booking.total_amount?.toLocaleString() || '0'}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="outline" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Calendar className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                <h3 className="text-lg font-semibold">No bookings yet</h3>
-                <p className="mb-4 text-muted-foreground">
-                  Your personal bookings will appear here once you start making reservations.
-                </p>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Your First Booking
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        {/* Points & Rewards Tab - Individual agent's points */}
-        <TabsContent value="points" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">My Points & Rewards</h2>
-            <Badge variant="secondary" className="text-orange-600">
-              {totalPoints.toLocaleString()} Available Points
-            </Badge>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>My Recent Transactions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {recentTransactions.length > 0 ? (
-                    recentTransactions.map((transaction) => (
-                      <div key={transaction.id} className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium">{transaction.description}</p>
-                          <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            {new Date(transaction.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <span
-                          className={`font-medium ${transaction.points > 0 ? 'text-green-600' : 'text-red-600'}`}
-                        >
-                          {transaction.points > 0 ? '+' : ''}
-                          {transaction.points} pts
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="py-4 text-center text-sm text-muted-foreground">
-                      No transactions yet. Start making bookings to earn points!
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Available Rewards</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between rounded border p-3">
-                    <div>
-                      <p className="font-medium">Hotel Voucher</p>
-                      <p className="text-sm text-muted-foreground">1 night stay</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">500 pts</p>
-                      <Button size="sm" variant="outline" disabled={totalPoints < 500}>
-                        Redeem
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between rounded border p-3">
-                    <div>
-                      <p className="font-medium">Travel Insurance</p>
-                      <p className="text-sm text-muted-foreground">Premium coverage</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">300 pts</p>
-                      <Button size="sm" variant="outline" disabled={totalPoints < 300}>
-                        Redeem
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between rounded border p-3">
-                    <div>
-                      <p className="font-medium">Gift Card</p>
-                      <p className="text-sm text-muted-foreground">€50 travel credit</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">200 pts</p>
-                      <Button size="sm" variant="outline" disabled={totalPoints < 200}>
-                        Redeem
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Voucher History Tab - Individual agent's voucher redemptions */}
-        <TabsContent value="vouchers" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">My Voucher Redemption History</h2>
-            <Badge variant="outline">{totalPointsUsed.toLocaleString()} Points Used</Badge>
-          </div>
-
-          {voucherRedemptions.length > 0 ? (
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Voucher Type</TableHead>
-                      <TableHead>Value</TableHead>
-                      <TableHead>Points Used</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Voucher Code</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {voucherRedemptions.map((voucher) => (
-                      <TableRow key={voucher.id}>
-                        <TableCell className="font-medium">{voucher.voucher_type}</TableCell>
-                        <TableCell>€{voucher.voucher_value}</TableCell>
-                        <TableCell>
-                          <span className="font-medium text-orange-600">
-                            {voucher.points_used} pts
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              voucher.status === 'issued'
-                                ? 'default'
-                                : voucher.status === 'redeemed'
-                                  ? 'secondary'
-                                  : 'outline'
-                            }
-                          >
-                            {voucher.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {voucher.redeemed_at
-                            ? new Date(voucher.redeemed_at).toLocaleDateString()
-                            : new Date(voucher.created_at).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          <code className="rounded bg-muted px-2 py-1 text-sm">
-                            {voucher.voucher_code || 'Pending'}
-                          </code>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Award className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                <h3 className="text-lg font-semibold">No vouchers redeemed</h3>
-                <p className="text-muted-foreground">
-                  Your personal voucher redemptions will appear here once you start redeeming
-                  points.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        {/* Profile Tab */}
-        <TabsContent value="profile" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">My Profile</h2>
-            <Button variant="outline">
-              <FileText className="mr-2 h-4 w-4" />
-              Edit Profile
-            </Button>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Agent Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Name</label>
-                  <p className="font-medium">
-                    {agentData.first_name} {agentData.last_name}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Email</label>
-                  <p className="font-medium">{agentData.email}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Phone</label>
-                  <p className="font-medium">{agentData.telephone}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Agency</label>
-                  <p className="font-medium">{agentData.agencies.name}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Status</label>
-                  <Badge variant={agentData.is_active ? 'default' : 'secondary'}>
-                    {agentData.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Member Since</label>
-                  <p className="font-medium">
-                    {new Date(agentData.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-
-              {/* Performance Summary - Personal metrics */}
-              <div className="mt-6 border-t pt-6">
-                <h4 className="mb-4 font-semibold">My Performance Summary</h4>
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{totalBookings}</div>
-                    <div className="text-sm text-muted-foreground">My Total Bookings</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">
-                      €{totalRevenue.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-muted-foreground">My Revenue Generated</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {totalPoints.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-muted-foreground">My Available Points</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {totalBookings > 0
-                        ? Math.round((completedBookings / totalBookings) * 100)
-                        : 0}
-                      %
-                    </div>
-                    <div className="text-sm text-muted-foreground">My Success Rate</div>
-                  </div>
-                </div>
-
-                {/* Add detailed booking breakdown */}
-                <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-green-600">{completedBookings}</div>
-                    <div className="text-sm text-muted-foreground">Completed</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-blue-600">{confirmedBookings}</div>
-                    <div className="text-sm text-muted-foreground">Confirmed</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-yellow-600">{pendingBookings}</div>
-                    <div className="text-sm text-muted-foreground">Pending</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-red-600">{cancelledBookings}</div>
-                    <div className="text-sm text-muted-foreground">Cancelled</div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
-
-function DashboardLoading() {
-  return (
-    <div className="container mx-auto space-y-6 py-6">
-      {/* Header Skeleton */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="mb-2 flex items-center gap-2">
-            <Plane className="h-8 w-8 text-blue-600" />
-            <Skeleton className="h-8 w-[200px]" />
-          </div>
-          <Skeleton className="mb-1 h-5 w-[250px]" />
-          <Skeleton className="h-4 w-[300px]" />
         </div>
-        <div className="text-right">
-          <Skeleton className="mb-2 h-6 w-[120px]" />
-          <Skeleton className="h-3 w-[150px]" />
-        </div>
-      </div>
 
-      {/* Stats Cards Skeleton */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <StatsCardSkeleton key={i} />
-        ))}
-      </div>
+        {/* Main Content */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Booking Form */}
+          <AgentBookingForm
+            onBookingCreated={() => {
+              console.log('Booking created successfully!');
+              window.location.reload();
+            }}
+          />
 
-      {/* Agency Info Skeleton */}
-      <AgencyInfoSkeleton />
-
-      {/* Tabs Skeleton */}
-      <div className="space-y-4">
-        <div className="flex space-x-1 rounded-lg bg-muted p-1">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-8 w-[120px]" />
-          ))}
-        </div>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Skeleton className="h-6 w-[200px]" />
-            <Skeleton className="h-9 w-[150px]" />
+          {/* Bookings List */}
+          <div className="lg:col-span-1">
+            <AgentBookingsList initialBookings={bookings || []} />
           </div>
-          <TableSkeleton />
         </div>
       </div>
     </div>
-  );
-}
-
-export default function AgentDashboard() {
-  return (
-    <Suspense fallback={<DashboardLoading />}>
-      <DashboardContent />
-    </Suspense>
   );
 }

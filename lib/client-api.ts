@@ -40,11 +40,13 @@ export async function createAgentWithAgency(agentData: {
     if (!response.ok) {
       return {
         success: false,
-        error: result.error || 'Failed to create agent',
+        error: result.error || 'Failed to create agent application',
         error_type: result.error_type,
         existing_agent: result.existing_agent,
+        existing_application: result.existing_application,
         suggest_search: result.suggest_search,
         existing_agency: result.existing_agency,
+        details: result.details,
         ...result,
       };
     }
@@ -52,7 +54,11 @@ export async function createAgentWithAgency(agentData: {
     return { success: true, ...result };
   } catch (error) {
     console.error('Error in createAgentWithAgency:', error);
-    return { success: false, error: 'Network error occurred' };
+    return {
+      success: false,
+      error: 'Network error occurred',
+      error_type: 'network_error',
+    };
   }
 }
 

@@ -893,57 +893,158 @@ export async function getAgencyPointsHistory(agencyId: string) {
   }
 }
 
-// Add these functions to your existing database.ts file
+// Add these functions to lib/database.ts
 
-export async function getAgentClients(agentId: string) {
+// Create a new booking
+export async function createBooking(bookingData: {
+  agent_id: string;
+  guest_name: string;
+  hotel_id: string;
+  room_type_id: string;
+  arrival_date: string;
+  departure_date: string;
+  reference_number?: string;
+}) {
   const supabase = createClient();
 
-  const { data, error } = await supabase
-    .from('agent_clients')
-    .select('*')
-    .eq('agent_id', agentId)
-    .order('created_at', { ascending: false });
+  try {
+    // Calculate nights
+    const checkIn = new Date(bookingData.arrival_date);
+    const checkOut = new Date(bookingData.departure_date);
+    const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
 
-  if (error) {
-    console.error('Error fetching agent clients:', error);
-    return [];
+    // Get room type points
+    const { data: roomType } = await supabase
+      .from('room_type_points')
+      .select('points_per_night')
+      .eq('id', bookingData.room_type_id)
+      .single();
+
+    const rewardPoints = roomType ? roomType.points_per_night * nights : 0;
+
+    // Create booking
+    const { data, error } = await supabase
+      .from('bookings')
+      .insert({
+        ...bookingData,
+        number_of_nights: nights,
+        reward_points: rewardPoints,
+        verification_status: 'pending',
+        booking_status: 'confirmed',
+        confirmation_number: `BK${Date.now()}`,
+      })
+      .select(
+        `
+        *,
+        hotels!inner(hotel_name, location_city, location_country),
+        room_type_points!inner(room_type_name, points_per_night)
+      `
+      )
+      .single();
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error creating booking:', error);
+    return { success: false, error: error.message };
   }
-
-  return data || [];
 }
 
-export async function getBookingsByAgent(agentId: string) {
+// Get agent's bookings with full details
+export async function getAgentBookingsWithDetails(agentId: string) {
   const supabase = createClient();
 
-  const { data, error } = await supabase
-    .from('bookings')
-    .select(
+  try {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select(
+        `
+        *,
+        hotels!inner(
+          hotel_name,
+          location_city,
+          location_country
+        ),
+        room_type_points!inner(
+          room_type_name,
+          points_per_night,
+          category
+        )
       `
-      *,
-      hotels (hotel_name, location_city, location_country),
-      room_types (room_type_name, max_occupancy)
-    `
-    )
-    .eq('agent_id', agentId)
-    .order('created_at', { ascending: false });
+      )
+      .eq('agent_id', agentId)
+      .order('created_at', { ascending: false });
 
-  if (error) {
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
     console.error('Error fetching agent bookings:', error);
     return [];
   }
+}
+
+// Get agent's total points
+export async function getAgentTotalPoints(agentId: string) {
+  const supabase = createClient();
+
+  try {
+    // Get total earned points from approved bookings
+    const { data: earnedPoints } = await supabase
+      .from('bookings')
+      .select('reward_points')
+      .eq('agent_id', agentId)
+      .eq('verification_status', 'approved');
+
+    // Get total redeemed points
+    const { data: redeemedPoints } = await supabase
+      .from('agent_point_redemptions')
+      .select('points_used')
+      .eq('agent_id', agentId)
+      .eq('status', 'completed');
+
+    const totalEarned =
+      earnedPoints?.reduce((sum, booking) => sum + (booking.reward_points || 0), 0) || 0;
+    const totalRedeemed =
+      redeemedPoints?.reduce((sum, redemption) => sum + redemption.points_used, 0) || 0;
+
+    return {
+      totalEarned,
+      totalRedeemed,
+      availablePoints: totalEarned - totalRedeemed,
+    };
+  } catch (error) {
+    console.error('Error fetching agent points:', error);
+    return { totalEarned: 0, totalRedeemed: 0, availablePoints: 0 };
+  }
+}
+
+// Get hotels for dropdown
+export async function getHotelsForDropdown() {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from('hotels')
+    .select('id, hotel_name, location_city, location_country')
+    .eq('is_active', true)
+    .order('hotel_name');
+
+  if (error) {
+    console.error('Error fetching hotels:', error);
+    return [];
+  }
 
   return data || [];
 }
 
-export async function getRoomTypesByHotel(hotelId: string) {
+// Get room types for dropdown
+export async function getRoomTypesForDropdown() {
   const supabase = createClient();
 
   const { data, error } = await supabase
-    .from('room_types')
-    .select('*')
-    .eq('hotel_id', hotelId)
+    .from('room_type_points')
+    .select('id, room_type_name, points_per_night, category')
     .eq('is_active', true)
-    .order('room_type_name', { ascending: true });
+    .order('room_type_name');
 
   if (error) {
     console.error('Error fetching room types:', error);
@@ -953,164 +1054,27 @@ export async function getRoomTypesByHotel(hotelId: string) {
   return data || [];
 }
 
-export async function getAgentWithAgency(agentId: string) {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from('agents')
-    .select(
-      `
-      *,
-      agencies!agencies_agent_id_fkey (
-        id,
-        name,
-        city,
-        country,
-        email,
-        telephone,
-        zip_code,
-        is_active
-      )
-    `
-    )
-    .eq('id', agentId)
-    .single();
-
-  if (error) {
-    console.error('Error fetching agent with agency:', error);
-    return null;
-  }
-
-  return data;
-}
-
-export async function getAgentBookings(agentId: string): Promise<Booking[]> {
-  const supabase = createClient();
-
-  // First get the agent's agency
-  const agent = await getAgentWithAgency(agentId);
-
-  if (!agent?.agencies?.id) {
-    console.error('Agent has no associated agency');
-    return [];
-  }
-
-  // Then get bookings for that agency
-  const { data, error } = await supabase
-    .from('bookings')
-    .select(
-      `
-      *,
-      hotels (
-        hotel_name,
-        location_city,
-        location_country,
-        star_rating
-      ),
-      room_types (
-        room_type_name,
-        max_occupancy
-      ),
-      agencies (
-        name,
-        city,
-        country
-      )
-    `
-    )
-    .eq('agency_id', agent.agencies.id)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching agent bookings:', error);
-    return [];
-  }
-
-  return data || [];
-}
-
-export async function getAgentVoucherRedemptions(agentId: string) {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from('voucher_redemptions')
-    .select('*')
-    .eq('agent_id', agentId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching voucher redemptions:', error);
-    return [];
-  }
-
-  return data || [];
-}
-
-// Add only ONE instance of getAllAgencies (if it doesn't exist)
-export async function getAllAgencies() {
+// Redeem points
+export async function redeemAgentPoints(agentId: string, pointsToRedeem: number) {
   const supabase = createClient();
 
   try {
     const { data, error } = await supabase
-      .from('agencies')
-      .select(
-        `
-        *,
-        agents!agency_id (
-          id,
-          first_name,
-          last_name,
-          email,
-          telephone,
-          is_active
-        )
-      `
-      )
-      .order('name', { ascending: true });
+      .from('agent_point_redemptions')
+      .insert({
+        agent_id: agentId,
+        points_used: pointsToRedeem,
+        redemption_type: 'voucher',
+        redemption_value: pointsToRedeem * 0.01, // €0.01 per point
+        status: 'pending',
+      })
+      .select()
+      .single();
 
-    if (error) {
-      console.error('Error fetching agencies:', error);
-      return [];
-    }
-
-    return data || [];
+    if (error) throw error;
+    return { success: true, data };
   } catch (error) {
-    console.error('Error in getAllAgencies:', error);
-    return [];
-  }
-}
-// Add this function after the getAllAgencies function (around line 1073)
-export async function getRegionalAgencies(region: string) {
-  const supabase = createClient();
-
-  try {
-    const { data, error } = await supabase
-      .from('agencies')
-      .select(
-        `
-        *,
-        agents!agency_id (
-          id,
-          first_name,
-          last_name,
-          email,
-          telephone,
-          is_active
-        )
-      `
-      )
-      .eq('region', region)
-      .eq('is_active', true)
-      .order('name', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching regional agencies:', error);
-      return [];
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error('Error in getRegionalAgencies:', error);
-    return [];
+    console.error('Error redeeming points:', error);
+    return { success: false, error: error.message };
   }
 }

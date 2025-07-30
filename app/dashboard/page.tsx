@@ -1,5 +1,4 @@
 import { createClient } from '@/utils/supabase/server';
-import { redirect } from 'next/navigation';
 import AdminDashboardClient from './admin-dashboard-client';
 
 // TypeScript interfaces for admin dashboard
@@ -189,34 +188,8 @@ async function getAdminDashboardData(): Promise<AdminDashboardData> {
 }
 
 export default async function AdminDashboard() {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/login');
-  }
-
-  // Check if user is admin
-  const { data: userProfile } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  if (!userProfile || userProfile.user_type !== 'admin') {
-    redirect('/dashboard');
-  }
-
-  // Fetch all admin data in optimized call
+  // Fetch all admin data
   const dashboardData = await getAdminDashboardData();
 
-  return (
-    <AdminDashboardClient
-      initialData={dashboardData}
-      user={{ email: user.email || 'admin@example.com' }}
-    />
-  );
+  return <AdminDashboardClient initialData={dashboardData} user={{ email: 'admin@example.com' }} />;
 }
-2;
